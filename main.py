@@ -1,3 +1,5 @@
+import CastlingAnalyzer
+import DevelopingAnalyzer
 from QueenDevelopmentAnalyzer import QueenDevelopmentAnalyzer
 
 # DATA
@@ -7,8 +9,8 @@ data_file_path = "./data/chess_com_data.csv"
 
 # HEURISTIC: Castle soon
 # castling_analyzer = CastlingAnalyzer.CastlingAnalyzer(data_file_path)
-# #castling_analyzer.calculate_castling_vars()
-# #castling_analyzer.calculate_win_rates()
+# castling_analyzer.calculate_castling_turns()
+# castling_analyzer.calculate_win_rates()
 # #castling_analyzer.calculate_castling_effectiveness()
 # castling_analyzer.analyse_castling_data()
 
@@ -18,6 +20,11 @@ data_file_path = "./data/chess_com_data.csv"
 # center_anal.create_plot("center_analysis.csv")
 
 # HEURISTIC: Don't develop the queen early
-analyzer = QueenDevelopmentAnalyzer(data_file_path)
-analyzer.analyze_queen_development()
+# analyzer = QueenDevelopmentAnalyzer(data_file_path)
+# analyzer.analyze_queen_development()
 
+
+# DEVELOP PIECES BEFORE PAWNS
+
+developing_analyzer = DevelopingAnalyzer.DevelopingAnalyzer(data_file_path)
+developing_analyzer.print_data()

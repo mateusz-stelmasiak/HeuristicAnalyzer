@@ -91,11 +91,11 @@ class CastlingAnalyzer:
 
         # moves column no longer needed
         data = data.drop(["moves"], axis=1)
-        self.__save_to_csv(data, "castling_engine.csv")
+        self.__save_to_csv(data, self.output_file)
 
     def analyse_castling_data(self):
         # Load data from .csv file
-        df = pd.read_csv("castling_engine.csv")
+        df = pd.read_csv("./data/castling_engine.csv")
         df = df[df[f"white_castling_consideration_turn"] != "-"]
         df = df[df[f"black_castling_consideration_turn"] != "-"]    
         df = df[df[f"whites_best_move_is_castle"] != "-"]
