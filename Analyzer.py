@@ -24,12 +24,13 @@ class Analyzer:
         print(self.dataReader.data)
 
     def run_analysis(self):
-        result_file = "results.csv"
 
         for index, row in self.data.iterrows():
+
             if index >= self.amount_to_analise:
                 break
-            print(f"Analyzing game {index + 1}/{len(self.data.index)}")
+
+            print(f"Analyzing game {index + 1}/{self.amount_to_analise}")
 
             moves = eval(row['Moves'])
             result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
