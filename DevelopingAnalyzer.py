@@ -9,9 +9,13 @@ class DevelopingAnalyzer:
 
     def analyze_game(self, moves):
         piece_moves = {k: 0 for k in self.pieces.keys()}
+        moved_count = 0
         for idx, move in enumerate(moves):
             move_from = move[:2]
             if move_from in piece_moves and piece_moves[move_from] == 0:
                 piece_moves[move_from] = (idx // 2) + 1
+                moved_count += 1
+                if moved_count == len(self.pieces):
+                    break
         result_dict = {self.pieces[k]: v for k, v in piece_moves.items()}
         return pd.DataFrame(result_dict, index=[0])
