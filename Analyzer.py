@@ -22,30 +22,22 @@ class Analyzer:
 
     def run_analysis(self):
         result_file = "results.csv"
-        result_data = []
+
         for index, row in self.data.iterrows():
             print(f"Analyzing game {index + 1}/{len(self.data.index)}")
+
+            result_data = []
             moves = eval(row['Moves'])
-            white_elo = row['WhiteElo']
-            black_elo = row['BlackElo']
-            result = row['Result']
+            result_data.append([row['WhiteElo'], row['BlackElo'], row['Result']])
+            columns = ['WhiteElo', 'BlackElo', 'Result']
 
             analyzer_results = self.developing_analyzer.analyze_game(moves)  # lala
 
             if analyzer_results is not None:
-                result_data.append([white_elo, black_elo, result] + analyzer_results.values.tolist())
-            else:
-                result_data.append([white_elo, black_elo, result])
-
-            if analyzer_results is not None:
-                columns = ['WhiteElo', 'BlackElo', 'Result'] + analyzer_results.columns.tolist()
-            else:
-                columns = ['WhiteElo', 'BlackElo', 'Result']
+                result_data.append(analyzer_results.values.tolist())
+                columns = columns + analyzer_results.columns.tolist()
 
             result_df = pd.DataFrame(result_data, columns=columns)
-
-            result_df.to_csv(result_file, index=False)
-
             self.dataReader.append_to_csv(result_df)
 
     def run_castling_analyzer(self, board):
