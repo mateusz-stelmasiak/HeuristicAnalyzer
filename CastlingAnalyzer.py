@@ -8,35 +8,62 @@ import matplotlib.pyplot as plt
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
-    def __init__(self, data_path, engine, limit):
-        self.data_path = data_path
-        self.output_file = data_path[:len(data_path) - 4] + "_castling.csv"
-        self.castled_before_checks = [3, 4, 5, 6, 7, 8, 9, 10, 15]  # earliest castle is move 4
-        self.engine = engine
-        self.limit = limit
+    def __init__(self):
+        self.early_turn_cutoff_index = 15 * 2
+        # start the search from 5th turn (10 element of the array) as the players cannot castle earlier
+        self.earliest_castling_turn_index = 5 * 2
+        self.fill_value = "-"  # value that is put if player didn't castle at all
+        self.castling_moves = {
+            "white_short_castle": "e4g4",
+            "white_long_castle": "e4c4",
+            "black_short_castle": "e8g8",
+            "black_long_castle": "e8c8"
+        }
 
-    def calculate_win_rates(self):
-        data = pd.read_csv(self.output_file)
+    def analytical_method(self, moves):
+        print(f"Looking for castling in {moves}")
+        
+        result = {
+            "WhiteShortCastle": self.fill_value,
+            "WhiteLongCastle": self.fill_value,
+            "BlackShortCastle": self.fill_value,
+            "BlackLongCastle": self.fill_value
+        }
+        white_castled_flag = False
+        black_castled_flag = False
 
-        print(f"Average castling turn")
-        white_ca = data['white_castle_turn'].apply(lambda x: 0 if x == '-' else int(x)).mean()
-        black_ca = data['black_castle_turn'].apply(lambda x: 0 if x == '-' else int(x)).mean()
-        print(f"W-{white_ca:.2} | B-{black_ca:.2}\n")
+        # start the search from 5th turn
+        for turn_index in range(self.earliest_castling_turn_index, self.early_turn_cutoff_index):
+            curr_move = moves[turn_index]
+            print(f"Looking at {curr_move} (index {turn_index})")
 
-        print(f"Base win rate ({len(data.index)} games analysed)")
-        white_wr = data['result'].apply(lambda x: 1 if x == '1-0' else 0).mean()
-        black_wr = data['result'].apply(lambda x: 1 if x == '0-1' else 0).mean()
-        print(f"W-{white_wr:.2%} | B-{black_wr:.2%}")
+            if white_castled_flag and black_castled_flag:
+                break
 
-        for check in self.castled_before_checks:
-            white_games = data[data[f"white_castled_before_{check}"] == 1]
-            white_wr = white_games['result'].apply(
-                lambda x: 1 if x == '1-0' else 0).mean()
-            black_games = data[data[f"black_castled_before_{check}"] == 1]
-            black_wr = black_games['result'].apply(
-                lambda x: 1 if x == '0-1' else 0).mean()
-            print(f"Win rate when castling before move {check} (games analysed)")
-            print(f"W-{white_wr:.2%} ({len(white_games.index)}) | B-{black_wr:.2%} ({len(black_games.index)})")
+            # check for white castle
+            if not white_castled_flag:
+                if curr_move == self.castling_moves['white_short_castle']:
+                    result['WhiteShortCastle'] = turn_index//2+1
+                    white_castled_flag = True
+                    continue
+
+                if curr_move == self.castling_moves['white_long_castle']:
+                    result['WhiteLongCastle'] = turn_index//2+1
+                    white_castled_flag = True
+                    continue
+
+            if not black_castled_flag:
+                if curr_move == self.castling_moves['black_short_castle']:
+                    result['BlackShortCastle'] = turn_index//2+1
+                    black_castled_flag = True
+                    continue
+
+                if curr_move == self.castling_moves['black_long_castle']:
+                    result['BlackLongCastle'] = turn_index//2+1
+                    black_castled_flag = True
+                    continue
+
+        return pd.DataFrame(result)
 
     # we find games in the database that have the possibility of castling early,
     # and then evaluate those with the stockfish engine and see the proportion
@@ -93,75 +120,8 @@ class CastlingAnalyzer:
         data = data.drop(["moves"], axis=1)
         self.__save_to_csv(data, self.output_file)
 
-    def analyse_castling_data(self):
-        # Load data from .csv file
-        df = pd.read_csv("./data/castling_engine.csv")
-        df = df[df[f"white_castling_consideration_turn"] != "-"]
-        df = df[df[f"black_castling_consideration_turn"] != "-"]    
-        df = df[df[f"whites_best_move_is_castle"] != "-"]
-        df = df[df[f"blacks_best_move_is_castle"] != "-"]
-
-        # Calculate results
-        total_games = len(df)
-        white_best_move_is_castle = df[df['whites_best_move_is_castle'] == "1"]
-        black_best_move_is_castle = df[df['blacks_best_move_is_castle'] == "1"]
-        games_with_castle_consideration_turn = df[
-            df['white_castling_consideration_turn'].notna() | df['black_castling_consideration_turn'].notna()]
-
-        # Reformat columns
-        df["white_castling_consideration_turn"] = df["white_castling_consideration_turn"].astype(int)
-        df["black_castling_consideration_turn"] = df["black_castling_consideration_turn"].astype(int)
-        df["whites_best_move_is_castle"] = df["whites_best_move_is_castle"].astype(int)
-        df["blacks_best_move_is_castle"] = df["blacks_best_move_is_castle"].astype(int)
-
-        # Convert result values to numerical format
-        result_mapping = {"0-1": -1, "1-0": 1, "1/2-1/2": 0.5}
-        df["result"] = df["result"].map(result_mapping)
-        
-        # Group data by castling consideration turn
-        white_grouped = df.groupby("white_castling_consideration_turn").agg({"whites_best_move_is_castle": ["sum", "count"]})
-        black_grouped = df.groupby("black_castling_consideration_turn").agg({"blacks_best_move_is_castle": ["sum", "count"]})
-
-        # Calculate the proportion of castlings recommended
-        white_grouped["proportion"] = white_grouped["whites_best_move_is_castle"]["sum"] / white_grouped["whites_best_move_is_castle"]["count"]
-        black_grouped["proportion"] = black_grouped["blacks_best_move_is_castle"]["sum"] / black_grouped["blacks_best_move_is_castle"]["count"]
-
-        # Generate graph
-        plt.figure(figsize=(10, 6))
-        plt.plot(white_grouped.index, white_grouped["proportion"], color="blue", label="White")
-        plt.plot(black_grouped.index, black_grouped["proportion"], color="red", label="Black")
-        plt.xlim(right=45)
-        plt.xlabel("Castling Consideration Turn")
-        plt.ylabel("Proportion of Castlings Recommended")
-        plt.title("Proportion of Castlings Recommended by Castling Consideration Turn")
-        plt.legend()
-        plt.show()
-
-
-        # Filter results with best move castle
-        results_with_best_move_castle = df[
-            (df['whites_best_move_is_castle'] == 1) | (df['blacks_best_move_is_castle'] == 1)]
-        total_games_with_best_move_castle = len(results_with_best_move_castle)
-
-
-        # Print results
-        print(f"Total games analyzed: {total_games}")
-        print(f"Total games with best move is castle for White: {len(white_best_move_is_castle)}")
-        print(f"Total games with best move is castle for Black: {len(black_best_move_is_castle)}")
-        print(f"Total games with castling consideration turn: {len(games_with_castle_consideration_turn)}")
-        print(f"Total games with best move castle: {total_games_with_best_move_castle}")
-        print(f"Castling favor ratio: {total_games_with_best_move_castle/len(games_with_castle_consideration_turn):.2%}")
-
     def calculate_castling_turns(self):
         data = self.prepare_data()
-
-        fill_value = "-"
-        data["white_castle_turn"] = fill_value
-        data["black_castle_turn"] = fill_value
-
-        for check in self.castled_before_checks:
-            data[f"white_castled_before_{check}"] = 0
-            data[f"black_castled_before_{check}"] = 0
 
         for index, row in data.iterrows():
             print(f"Analysing row {index + 1}/{len(data.index)}")
@@ -196,22 +156,88 @@ class CastlingAnalyzer:
         data = data.drop(["moves"], axis=1)
         self.__save_to_csv(data, self.output_file)
 
-    def prepare_data(self):
-        data = self.__load_data()
-        data = self.__drop_not_required_columns(data)
-        # drop games which don't contain castling
-        # data = data[data['player_castled'] == "True"]
-        # drop player_castled column (no longer needed)
-        data = data.drop(["player_castled"], axis=1)
-        print(f"Loaded {len(data.index)} rows of data")
-        return data
+# maybe steal?
+# def calculate_win_rates(self):
+#       data = pd.read_csv(self.output_file)
+#
+#       print(f"Average castling turn")
+#       white_ca = data['white_castle_turn'].apply(lambda x: 0 if x == '-' else int(x)).mean()
+#       black_ca = data['black_castle_turn'].apply(lambda x: 0 if x == '-' else int(x)).mean()
+#       print(f"W-{white_ca:.2} | B-{black_ca:.2}\n")
+#
+#       print(f"Base win rate ({len(data.index)} games analysed)")
+#       white_wr = data['result'].apply(lambda x: 1 if x == '1-0' else 0).mean()
+#       black_wr = data['result'].apply(lambda x: 1 if x == '0-1' else 0).mean()
+#       print(f"W-{white_wr:.2%} | B-{black_wr:.2%}")
+#
+#       for check in self.castled_before_checks:
+#           white_games = data[data[f"white_castled_before_{check}"] == 1]
+#           white_wr = white_games['result'].apply(
+#               lambda x: 1 if x == '1-0' else 0).mean()
+#           black_games = data[data[f"black_castled_before_{check}"] == 1]
+#           black_wr = black_games['result'].apply(
+#               lambda x: 1 if x == '0-1' else 0).mean()
+#           print(f"Win rate when castling before move {check} (games analysed)")
+#           print(f"W-{white_wr:.2%} ({len(white_games.index)}) | B-{black_wr:.2%} ({len(black_games.index)})")
 
-    def __load_data(self):
-        return pd.read_csv(self.data_path)
 
-    def __save_to_csv(self, df, filename):
-        df.to_csv(filename, header=not os.path.exists(filename))
-
-    def __drop_not_required_columns(self, df):
-        df = df.drop(["date", "player_white", "player_black", "no_of_moves"], axis=1)
-        return df
+# def analyse_castling_data(self):
+#     # Load data from .csv file
+#     df = pd.read_csv("./data/castling_engine.csv")
+#     df = df[df[f"white_castling_consideration_turn"] != "-"]
+#     df = df[df[f"black_castling_consideration_turn"] != "-"]
+#     df = df[df[f"whites_best_move_is_castle"] != "-"]
+#     df = df[df[f"blacks_best_move_is_castle"] != "-"]
+#
+#     # Calculate results
+#     total_games = len(df)
+#     white_best_move_is_castle = df[df['whites_best_move_is_castle'] == "1"]
+#     black_best_move_is_castle = df[df['blacks_best_move_is_castle'] == "1"]
+#     games_with_castle_consideration_turn = df[
+#         df['white_castling_consideration_turn'].notna() | df['black_castling_consideration_turn'].notna()]
+#
+#     # Reformat columns
+#     df["white_castling_consideration_turn"] = df["white_castling_consideration_turn"].astype(int)
+#     df["black_castling_consideration_turn"] = df["black_castling_consideration_turn"].astype(int)
+#     df["whites_best_move_is_castle"] = df["whites_best_move_is_castle"].astype(int)
+#     df["blacks_best_move_is_castle"] = df["blacks_best_move_is_castle"].astype(int)
+#
+#     # Convert result values to numerical format
+#     result_mapping = {"0-1": -1, "1-0": 1, "1/2-1/2": 0.5}
+#     df["result"] = df["result"].map(result_mapping)
+#
+#     # Group data by castling consideration turn
+#     white_grouped = df.groupby("white_castling_consideration_turn").agg(
+#         {"whites_best_move_is_castle": ["sum", "count"]})
+#     black_grouped = df.groupby("black_castling_consideration_turn").agg(
+#         {"blacks_best_move_is_castle": ["sum", "count"]})
+#
+#     # Calculate the proportion of castlings recommended
+#     white_grouped["proportion"] = white_grouped["whites_best_move_is_castle"]["sum"] / \
+#                                   white_grouped["whites_best_move_is_castle"]["count"]
+#     black_grouped["proportion"] = black_grouped["blacks_best_move_is_castle"]["sum"] / \
+#                                   black_grouped["blacks_best_move_is_castle"]["count"]
+#
+#     # Generate graph
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(white_grouped.index, white_grouped["proportion"], color="blue", label="White")
+#     plt.plot(black_grouped.index, black_grouped["proportion"], color="red", label="Black")
+#     plt.xlim(right=45)
+#     plt.xlabel("Castling Consideration Turn")
+#     plt.ylabel("Proportion of Castlings Recommended")
+#     plt.title("Proportion of Castlings Recommended by Castling Consideration Turn")
+#     plt.legend()
+#     plt.show()
+#
+#     # Filter results with best move castle
+#     results_with_best_move_castle = df[
+#         (df['whites_best_move_is_castle'] == 1) | (df['blacks_best_move_is_castle'] == 1)]
+#     total_games_with_best_move_castle = len(results_with_best_move_castle)
+#
+#     # Print results
+#     print(f"Total games analyzed: {total_games}")
+#     print(f"Total games with best move is castle for White: {len(white_best_move_is_castle)}")
+#     print(f"Total games with best move is castle for Black: {len(black_best_move_is_castle)}")
+#     print(f"Total games with castling consideration turn: {len(games_with_castle_consideration_turn)}")
+#     print(f"Total games with best move castle: {total_games_with_best_move_castle}")
+#     print(f"Castling favor ratio: {total_games_with_best_move_castle / len(games_with_castle_consideration_turn):.2%}")
