@@ -27,7 +27,7 @@ class CastlingAnalyzer:
         self.black_castling_types = ["BlackShortCastle", "BlackLongCastle"]
 
     def analytical_method(self, moves):
-        #print(f"Looking for castling in {moves}")
+        # print(f"Looking for castling in {moves}")
 
         result = {
             "WhiteShortCastle": self.fill_value,
@@ -38,11 +38,17 @@ class CastlingAnalyzer:
         white_castled_flag = False
         black_castled_flag = False
 
+        # if game didn't even last long enough to castle, break
+        move_number = len(moves)
+        if move_number < self.earliest_castling_turn_index:
+            return pd.Series(result).to_frame().T
+
+        # end search where 'early is defined'
+        last_searched_turn = min(self.early_turn_cutoff_index, move_number)
         # start the search from 5th turn
-        last_searched_turn = min(self.early_turn_cutoff_index, len(moves))
         for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
-            #print(f"Looking at {curr_move} (index {turn_index})")
+            # print(f"Looking at {curr_move} (index {turn_index})")
 
             if white_castled_flag and black_castled_flag:
                 break

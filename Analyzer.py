@@ -17,7 +17,7 @@ class Analyzer:
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
         self.developing_analyzer = DevelopingAnalyzer()
-        #self.castling_analyzer = CastlingAnalyzer()
+        self.castling_analyzer = CastlingAnalyzer()
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
             self.amount_to_analise = len(self.data)
