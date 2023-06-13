@@ -1,5 +1,6 @@
 import chess
 import pandas as pd
+from tqdm import tqdm
 
 import CSVHandler
 from DevelopingAnalyzer import DevelopingAnalyzer
@@ -26,25 +27,19 @@ class Analyzer:
 
     def run_analysis(self):
 
-        for index, row in self.data.iterrows():
+        for index, row in tqdm(self.data.iterrows(), total=self.amount_to_analise, desc="Analyzing games"):
 
             if index >= self.amount_to_analise:
                 break
-
-            #print(f"Analyzing game {index + 1}/{self.amount_to_analise}")
 
             moves = eval(row['Moves'])
             result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
                                         'BlackElo': [row['BlackElo']],
                                         'Result': [row['Result']]})
-            #castling_analyzer_results = self.castling_analyzer.analytical_method(moves)
             analyzer_results = self.developing_analyzer.analyze_game(moves)
 
             if analyzer_results is not None:
                 result_data = pd.concat([result_data, analyzer_results], axis=1)
-
-            # if castling_analyzer_results is not None:
-            #     result_data = pd.concat([result_data, castling_analyzer_results], axis=1)
 
             self.dataReader.append_to_csv(result_data)
 
