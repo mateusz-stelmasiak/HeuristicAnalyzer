@@ -14,15 +14,21 @@ class CastlingAnalyzer:
         self.earliest_castling_turn_index = 5 * 2
         self.fill_value = "-"  # value that is put if player didn't castle at all
         self.castling_moves = {
-            "white_short_castle": "e4g4",
-            "white_long_castle": "e4c4",
+            "white_short_castle": "e1g1",
+            "white_long_castle": "e1c1",
             "black_short_castle": "e8g8",
             "black_long_castle": "e8c8"
         }
+        self.white_castling_moves = [self.castling_moves['white_short_castle'],
+                                     self.castling_moves["white_long_castle"]]
+        self.white_castling_types = ["WhiteShortCastle", "WhiteLongCastle"]
+        self.black_castling_moves = [self.castling_moves['black_short_castle'],
+                                     self.castling_moves["black_long_castle"]]
+        self.black_castling_types = ["BlackShortCastle", "BlackLongCastle"]
 
     def analytical_method(self, moves):
-        print(f"Looking for castling in {moves}")
-        
+        #print(f"Looking for castling in {moves}")
+
         result = {
             "WhiteShortCastle": self.fill_value,
             "WhiteLongCastle": self.fill_value,
@@ -33,37 +39,34 @@ class CastlingAnalyzer:
         black_castled_flag = False
 
         # start the search from 5th turn
-        for turn_index in range(self.earliest_castling_turn_index, self.early_turn_cutoff_index):
+        last_searched_turn = min(self.early_turn_cutoff_index, len(moves))
+        for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
-            print(f"Looking at {curr_move} (index {turn_index})")
+            #print(f"Looking at {curr_move} (index {turn_index})")
 
             if white_castled_flag and black_castled_flag:
                 break
 
             # check for white castle
             if not white_castled_flag:
-                if curr_move == self.castling_moves['white_short_castle']:
-                    result['WhiteShortCastle'] = turn_index//2+1
-                    white_castled_flag = True
-                    continue
+                castling_type_index = self.white_castling_moves.index(
+                    curr_move) if curr_move in self.white_castling_moves else None
 
-                if curr_move == self.castling_moves['white_long_castle']:
-                    result['WhiteLongCastle'] = turn_index//2+1
+                if castling_type_index is not None:
+                    castling_type = self.white_castling_types[castling_type_index]
+                    result[castling_type] = turn_index // 2 + 1
                     white_castled_flag = True
-                    continue
 
             if not black_castled_flag:
-                if curr_move == self.castling_moves['black_short_castle']:
-                    result['BlackShortCastle'] = turn_index//2+1
-                    black_castled_flag = True
-                    continue
+                castling_type_index = self.black_castling_moves.index(
+                    curr_move) if curr_move in self.black_castling_moves else None
 
-                if curr_move == self.castling_moves['black_long_castle']:
-                    result['BlackLongCastle'] = turn_index//2+1
+                if castling_type_index is not None:
+                    castling_type = self.black_castling_types[castling_type_index]
+                    result[castling_type] = turn_index // 2 + 1
                     black_castled_flag = True
-                    continue
 
-        return pd.DataFrame(result)
+        return pd.Series(result).to_frame().T
 
     # we find games in the database that have the possibility of castling early,
     # and then evaluate those with the stockfish engine and see the proportion
