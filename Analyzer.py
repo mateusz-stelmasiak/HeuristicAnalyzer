@@ -1,5 +1,6 @@
 import chess
 import pandas as pd
+from tqdm import tqdm
 
 import CSVHandler
 from DevelopingAnalyzer import DevelopingAnalyzer
@@ -15,28 +16,27 @@ class Analyzer:
         self.limit = chess.engine.Limit(depth=15)
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
-        self.developing_analyzer = DevelopingAnalyzer(self.limit)
-        self.castling_analyzer = CastlingAnalyzer()
+        self.developing_analyzer = DevelopingAnalyzer()
+        #self.castling_analyzer = CastlingAnalyzer()
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
-            self.amount_to_analise = len(self.data.iterrows())
+            self.amount_to_analise = len(self.data)
 
     def print_data(self):
         print(self.dataReader.data)
 
     def run_analysis(self):
 
-        for index, row in self.data.iterrows():
+        for index, row in tqdm(self.data.iterrows(), total=self.amount_to_analise, desc="Analyzing games"):
 
             if index >= self.amount_to_analise:
                 break
-
-            print(f"Analyzing game {index + 1}/{self.amount_to_analise}")
 
             moves = eval(row['Moves'])
             result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
                                         'BlackElo': [row['BlackElo']],
                                         'Result': [row['Result']]})
+
             castling_analyzer_results = self.castling_analyzer.analytical_method(moves)
             result_data = pd.concat([result_data, castling_analyzer_results], axis=1)
 
