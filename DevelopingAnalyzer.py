@@ -15,6 +15,7 @@ class DevelopingAnalyzer(CSVHandler):
         self.limit = limit
 
     def analyze_game(self, moves):
+        print(moves)
         columns = ['test']
         results = [1]
 

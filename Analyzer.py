@@ -8,7 +8,7 @@ from engines.Engine import EngineType, Engine
 
 
 class Analyzer:
-    def __init__(self, data_path, output_path):
+    def __init__(self, data_path, output_path, amount_to_analise=None):
         self.data_path = data_path
         self.board = chess.Board()
         self.engine = Engine(EngineType.STOCKFISH)
@@ -16,6 +16,9 @@ class Analyzer:
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
         self.developing_analyzer = DevelopingAnalyzer.DevelopingAnalyzer(self.limit)
+        self.amount_to_analise = amount_to_analise
+        if not amount_to_analise:
+            self.amount_to_analise = len(self.data.iterrows())
 
     def print_data(self):
         print(self.dataReader.data)
@@ -24,21 +27,21 @@ class Analyzer:
         result_file = "results.csv"
 
         for index, row in self.data.iterrows():
+            if index >= self.amount_to_analise:
+                break
             print(f"Analyzing game {index + 1}/{len(self.data.index)}")
 
-            result_data = []
             moves = eval(row['Moves'])
-            result_data.append([row['WhiteElo'], row['BlackElo'], row['Result']])
-            columns = ['WhiteElo', 'BlackElo', 'Result']
+            result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
+                                        'BlackElo': [row['BlackElo']],
+                                        'Result': [row['Result']]})
 
-            analyzer_results = self.developing_analyzer.analyze_game(moves)  # lala
+            analyzer_results = self.developing_analyzer.analyze_game(moves)
 
             if analyzer_results is not None:
-                result_data.append(analyzer_results.values.tolist())
-                columns = columns + analyzer_results.columns.tolist()
+                result_data = pd.concat([result_data, analyzer_results], axis=1)
 
-            result_df = pd.DataFrame(result_data, columns=columns)
-            self.dataReader.append_to_csv(result_df)
+            self.dataReader.append_to_csv(result_data)
 
     def run_castling_analyzer(self, board):
         return
