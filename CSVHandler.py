@@ -16,6 +16,9 @@ class CSVHandler:
         self.data = pd.read_csv(self.input_path, dtype=dtype)
 
     def delete_output_file(self):
+        if not os.path.isfile(self.output_path):
+            return
+
         os.remove(self.output_path)
 
     def append_to_csv(self, df):

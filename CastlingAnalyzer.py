@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
-    def __init__(self):
+    def __init__(self, engine, limit):
         self.early_turn_cutoff_index = 15 * 2
         # start the search from 5th turn (10 element of the array) as the players cannot castle earlier
         self.earliest_castling_turn_index = 5 * 2
@@ -26,9 +26,96 @@ class CastlingAnalyzer:
                                      self.castling_moves["black_long_castle"]]
         self.black_castling_types = ["BlackShortCastle", "BlackLongCastle"]
 
-    def analytical_method(self, moves):
-        # print(f"Looking for castling in {moves}")
+        empty_result_dict = {
+            "WhiteCastlingConsiderationTurn": self.fill_value,
+            "BlackCastlingConsiderationTurn": self.fill_value,
+            "WhiteBestMoveAtConsiderationTurn": self.fill_value,
+            "BlackBestMoveAtConsiderationTurn": self.fill_value,
+            "WhiteShortCastle": self.fill_value,
+            "WhiteLongCastle": self.fill_value,
+            "BlackShortCastle": self.fill_value,
+            "BlackLongCastle": self.fill_value
+        }
+        self.empty_result_df = pd.Series(empty_result_dict).to_frame().T
 
+        self.board = chess.Board()
+        self.limit = limit
+        self.engine = engine
+        self.castling_move_objects = {
+            "White": [chess.Move.from_uci(self.castling_moves['white_short_castle']),
+                      chess.Move.from_uci(self.castling_moves['white_long_castle']),
+                      ],
+            "Black": [chess.Move.from_uci(self.castling_moves['black_short_castle']),
+                      chess.Move.from_uci(self.castling_moves['black_long_castle'])]
+        }
+
+    def analyze_game(self, moves):
+        # if game didn't even last long enough to castle, don't even start the analysis
+        move_number = len(moves)
+        if move_number < self.earliest_castling_turn_index:
+            return self.empty_result_df
+
+        # end search where 'early' is defined or at the last turn
+        last_searched_turn = min(self.early_turn_cutoff_index, move_number)
+        #analytical_res = self.analytical_method(moves, last_searched_turn)
+        empirical_res = self.empirical_method(moves, last_searched_turn)
+        return pd.concat([empirical_res], axis=1)
+
+    def empirical_method(self, moves, last_searched_turn):
+        result = {
+            "WhiteCastlingConsiderationTurn": self.fill_value,
+            "BlackCastlingConsiderationTurn": self.fill_value,
+            "WhiteBestMoveAtConsiderationTurn": self.fill_value,
+            "BlackBestMoveAtConsiderationTurn": self.fill_value
+        }
+        castled_flags = {
+            "White": False,
+            "Black": False
+        }
+
+        # set up the board and make move up to earliest castling turn
+        self.board.reset()
+        for i in range(0, self.earliest_castling_turn_index):
+            curr_move = moves[i]
+            move_obj = chess.Move.from_uci(curr_move)
+            self.board.push(move_obj)
+
+        for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
+            curr_move = moves[turn_index]
+            move_obj = chess.Move.from_uci(curr_move)
+            player_color = "White" if self.board.turn else "Black"
+
+            if not self.board.is_legal(move_obj):
+                print(f"Illegal move found in game!")
+                break
+
+            # found for both
+            if castled_flags["Black"] and castled_flags["White"]:
+                break
+
+            # this player's castling, has already been considered
+            if castled_flags[player_color]:
+                self.board.push(move_obj)
+                continue
+
+            # check if the player can castle instead
+            for castling_move in self.castling_move_objects[player_color]:
+                if not self.board.is_legal(castling_move):
+                    continue
+
+                # found a legal castling move
+                # evaluate if it's the best move
+                best_move = self.engine.get_best_move(self.board, self.limit)
+                result[f"{player_color}CastlingConsiderationTurn"] = self.board.fullmove_number
+                result[f"{player_color}BestMoveAtConsiderationTurn"] = str(best_move.uci())
+                castled_flags[player_color] = True
+
+            self.board.push(move_obj)
+
+        return pd.Series(result).to_frame().T
+
+    def analytical_method(self, moves, last_searched_turn):
+        # print(f"Looking for castling in {moves}")
         result = {
             "WhiteShortCastle": self.fill_value,
             "WhiteLongCastle": self.fill_value,
@@ -37,16 +124,8 @@ class CastlingAnalyzer:
         }
         white_castled_flag = False
         black_castled_flag = False
-        white_turn = False #set to false so it can be flipped at the begining of the loop
+        white_turn = False  # set to false so it can be flipped at the begining of the loop
 
-        # if game didn't even last long enough to castle, break
-        move_number = len(moves)
-        if move_number < self.earliest_castling_turn_index:
-            return pd.Series(result).to_frame().T
-
-        # end search where 'early' is defined or at the last turn
-        last_searched_turn = min(self.early_turn_cutoff_index, move_number)
-        # start the search from 5th turn
         for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
             white_turn = not white_turn
@@ -77,97 +156,6 @@ class CastlingAnalyzer:
                     continue
 
         return pd.Series(result).to_frame().T
-
-    # we find games in the database that have the possibility of castling early,
-    # and then evaluate those with the stockfish engine and see the proportion
-    # in which castling is the best move.
-    def calculate_castling_effectiveness(self):
-        data = self.prepare_data()
-        fill_value = "-"
-        data["whites_best_move_is_castle"] = fill_value
-        data["blacks_best_move_is_castle"] = fill_value
-        data["whites_best_move"] = fill_value
-        data["blacks_best_move"] = fill_value
-        data["white_castling_consideration_turn"] = fill_value
-        data["black_castling_consideration_turn"] = fill_value
-
-        castling_moves = [chess.Move.from_uci("e1g1"),  # Kingside castling for white: "e1g1"
-                          chess.Move.from_uci("e1c1"),  # Queenside castling for white: "e1c1"
-                          chess.Move.from_uci("e8g8"),  # Kingside castling for black: "e8g8"
-                          chess.Move.from_uci("e8c8"),  # Queenside castling for black: "e8c8"
-                          ]
-
-        for index, row in data.iterrows():
-            print(f"Analysing row {index + 1}/{len(data.index)}")
-            # create a new board and make moves until
-            # castling is detected from both players
-            # or the game ends
-            board = chess.Board()
-            moves = eval(row['moves'])
-            for move_string in moves:
-                move_obj = chess.Move.from_uci(move_string)
-                player_color = "white" if board.turn else "black"
-
-                if not board.is_legal(move_obj):
-                    print(f"Illegal move in game at row {index}")
-                    break
-
-                # check if can castle instead
-                for castling_move in castling_moves:
-                    if not board.is_legal(castling_move): continue
-                    # found a legal castling move
-                    # evaluate if it's the best move
-                    best_move = self.engine.get_best_move(board, self.limit)
-
-                    is_castling_best = board.is_castling(best_move)
-                    data.at[index, f"{player_color}s_best_move_is_castle"] = int(is_castling_best)
-                    data.at[index, f"{player_color}s_best_move"] = str(best_move.uci())
-                    data.at[index, f"{player_color}_castling_consideration_turn"] = board.fullmove_number
-
-                if data.at[index, f"{player_color}s_best_move_is_castle"] == 1:
-                    break
-
-                board.push(move_obj)
-
-        # moves column no longer needed
-        data = data.drop(["moves"], axis=1)
-        self.__save_to_csv(data, self.output_file)
-
-    def calculate_castling_turns(self):
-        data = self.prepare_data()
-
-        for index, row in data.iterrows():
-            print(f"Analysing row {index + 1}/{len(data.index)}")
-            # create a new board and make moves until
-            # castling is detected from both players
-            # or the game ends
-            board = chess.Board()
-            moves = eval(row['moves'])
-            for move_string in moves:
-                move_obj = chess.Move.from_uci(move_string)
-
-                if not board.is_legal(move_obj):
-                    print(f"Illegal move in game at row {index}")
-                    break
-
-                if board.is_castling(move_obj):
-                    turn_number = board.fullmove_number
-                    player_color = "white" if board.turn else "black"
-
-                    data.at[index, f"{player_color}_castle_turn"] = turn_number
-                    for check in self.castled_before_checks:
-                        data.at[index, f"{player_color}_castled_before_{check}"] = int(turn_number < check)
-
-                # check if castling hasn't been found for both players
-                if data.at[index, 'white_castle_turn'] != fill_value and data.at[
-                    index, 'black_castle_turn'] != fill_value:
-                    break
-
-                board.push(move_obj)
-
-        # moves column no longer needed
-        data = data.drop(["moves"], axis=1)
-        self.__save_to_csv(data, self.output_file)
 
 # maybe steal?
 # def calculate_win_rates(self):

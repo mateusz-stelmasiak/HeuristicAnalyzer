@@ -1,7 +1,7 @@
 import Analyzer
 import time
 
-analyzer = Analyzer.Analyzer("./data/TCEC_data.csv", "./data/results.csv")
+analyzer = Analyzer.Analyzer("./data/TCEC_data.csv", "./data/results_TCEC.csv")
 print(f"Starting analysis...")
 start_time = time.time()
 analyzer.run_analysis()
