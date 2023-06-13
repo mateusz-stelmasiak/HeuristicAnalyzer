@@ -17,7 +17,7 @@ class Analyzer:
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
         self.developing_analyzer = DevelopingAnalyzer()
-        #self.castling_analyzer = CastlingAnalyzer()
+        self.castling_analyzer = CastlingAnalyzer()
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
             self.amount_to_analise = len(self.data)
@@ -36,6 +36,10 @@ class Analyzer:
             result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
                                         'BlackElo': [row['BlackElo']],
                                         'Result': [row['Result']]})
+
+            castling_analyzer_results = self.castling_analyzer.analytical_method(moves)
+            result_data = pd.concat([result_data, castling_analyzer_results], axis=1)
+
             analyzer_results = self.developing_analyzer.analyze_game(moves)
 
             if analyzer_results is not None:
