@@ -1,19 +1,19 @@
 import chess
 import pandas as pd
 
-import DataReader
+import CSVHandler
 import DevelopingAnalyzer
 from CastlingAnalyzer import CastlingAnalyzer
 from engines.Engine import EngineType, Engine
 
 
 class Analyzer:
-    def __init__(self, data_path):
+    def __init__(self, data_path, output_path):
         self.data_path = data_path
         self.board = chess.Board()
         self.engine = Engine(EngineType.STOCKFISH)
         self.limit = chess.engine.Limit(depth=15)
-        self.dataReader = DataReader.DataReader(data_path)
+        self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
         self.developing_analyzer = DevelopingAnalyzer.DevelopingAnalyzer(self.limit)
 
@@ -30,7 +30,7 @@ class Analyzer:
             black_elo = row['BlackElo']
             result = row['Result']
 
-            analyzer_results = self.developing_analyzer.analyze_game(moves) #lala
+            analyzer_results = self.developing_analyzer.analyze_game(moves)  # lala
 
             if analyzer_results is not None:
                 result_data.append([white_elo, black_elo, result] + analyzer_results.values.tolist())
@@ -46,8 +46,7 @@ class Analyzer:
 
             result_df.to_csv(result_file, index=False)
 
-            self.dataReader.save_to_csv(result_df,result_file)
-
+            self.dataReader.append_to_csv(result_df)
 
     def run_castling_analyzer(self, board):
         return

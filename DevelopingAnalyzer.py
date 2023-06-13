@@ -3,12 +3,12 @@ import os
 import chess
 import pandas as pd
 
-from DataReader import DataReader
+from CSVHandler import CSVHandler
 
 
 # Heuristic develop pieces before pawns
 
-class DevelopingAnalyzer(DataReader):
+class DevelopingAnalyzer(CSVHandler):
 
     def __init__(self, limit):
         self.board = chess.Board()

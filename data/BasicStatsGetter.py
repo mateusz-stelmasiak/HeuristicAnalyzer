@@ -1,4 +1,4 @@
-from DataReader import DataReader
+from CSVHandler import CSVHandler
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -9,7 +9,7 @@ class BasicStatsGetter:
 
     def get_basic_stats(self, data_path):
         # read data from file
-        data_reader = DataReader(data_path)
+        data_reader = CSVHandler(data_path)
         print(f"Analysing {len(data_reader.data)} games...")
 
         white_wr, black_wr, draw_rate = self.get_win_rates(data_reader.data)
