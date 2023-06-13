@@ -19,7 +19,7 @@ class Analyzer:
         #self.castling_analyzer = CastlingAnalyzer()
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
-            self.amount_to_analise = len(self.data.iterrows())
+            self.amount_to_analise = len(self.data)
 
     def print_data(self):
         print(self.dataReader.data)
@@ -31,7 +31,7 @@ class Analyzer:
             if index >= self.amount_to_analise:
                 break
 
-            print(f"Analyzing game {index + 1}/{self.amount_to_analise}")
+            #print(f"Analyzing game {index + 1}/{self.amount_to_analise}")
 
             moves = eval(row['Moves'])
             result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
