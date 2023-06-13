@@ -1,11 +1,15 @@
 import CastlingAnalyzer
 import DevelopingAnalyzer
 from QueenDevelopmentAnalyzer import QueenDevelopmentAnalyzer
+import data.PGNtoCSVParser
+from data.BasicStatsGetter import BasicStatsGetter
 
 # DATA
-data_file_path = "./data/chess_com_data.csv"
-# chess_com_data_downloader = ChessDotComDataDownloader.ChessDotComDataDownloader(data_file_path)
-# chess_com_data_downloader.download_data_by_title('GM')
+#parser = data.PGNtoCSVParser.PGNtoCSVParser("./data/lichess_standard_1.csv")
+#parser.parse_all_in_folder("./data/lichess_standard_raw",max_elo_diff=300, max_elo=2300)
+
+bsg = BasicStatsGetter()
+bsg.get_basic_stats("./data/lichess_standard_1.csv")
 
 # HEURISTIC: Castle soon
 # castling_analyzer = CastlingAnalyzer.CastlingAnalyzer(data_file_path)
@@ -26,5 +30,6 @@ data_file_path = "./data/chess_com_data.csv"
 
 # DEVELOP PIECES BEFORE PAWNS
 
-developing_analyzer = DevelopingAnalyzer.DevelopingAnalyzer(data_file_path)
-developing_analyzer.print_data()
+#developing_analyzer = DevelopingAnalyzer.DevelopingAnalyzer(data_file_path)
+#developing_analyzer.print_data()
+

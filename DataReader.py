@@ -8,11 +8,12 @@ class DataReader:
     def __init__(self, data_path):
         self.data_path = data_path
         self.__load_data()
-        self.__drop_unnecessary_columns()
+        #self.__drop_unnecessary_columns()
         self.__clean_data()
 
     def __load_data(self):
-        self.data = pd.read_csv(self.data_path)
+        dtype = {"WhiteElo": int, "BlackElo": int,"Result":str,"Moves":str}
+        self.data = pd.read_csv(self.data_path,dtype=dtype)
 
     def save_to_csv(self, df, filename):
         df.to_csv(filename, mode='a', header=not os.path.exists(filename))
