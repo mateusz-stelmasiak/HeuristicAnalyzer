@@ -16,7 +16,7 @@ class CSVHandler:
         self.data = pd.read_csv(self.input_path, dtype=dtype)
 
     def append_to_csv(self, df):
-        df.to_csv(self.output_path, mode='a', header=not os.path.exists(self.output_path))
+        df.to_csv(self.output_path, mode='a', header=not os.path.exists(self.output_path),index=False)
 
     def __clean_data(self):
         self.data = self.data.dropna()  # Remove rows with missing values

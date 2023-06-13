@@ -2,7 +2,7 @@ import chess
 import pandas as pd
 
 import CSVHandler
-import DevelopingAnalyzer
+from DevelopingAnalyzer import DevelopingAnalyzer
 from CastlingAnalyzer import CastlingAnalyzer
 from engines.Engine import EngineType, Engine
 
@@ -15,7 +15,8 @@ class Analyzer:
         self.limit = chess.engine.Limit(depth=15)
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
-        self.developing_analyzer = DevelopingAnalyzer.DevelopingAnalyzer(self.limit)
+        self.developing_analyzer = DevelopingAnalyzer(self.limit)
+        self.castling_analyzer = CastlingAnalyzer()
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
             self.amount_to_analise = len(self.data.iterrows())
@@ -36,11 +37,14 @@ class Analyzer:
             result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
                                         'BlackElo': [row['BlackElo']],
                                         'Result': [row['Result']]})
-
+            #castling_analyzer_results = self.castling_analyzer.analytical_method(moves)
             analyzer_results = self.developing_analyzer.analyze_game(moves)
 
             if analyzer_results is not None:
                 result_data = pd.concat([result_data, analyzer_results], axis=1)
+
+            # if castling_analyzer_results is not None:
+            #     result_data = pd.concat([result_data, castling_analyzer_results], axis=1)
 
             self.dataReader.append_to_csv(result_data)
 
