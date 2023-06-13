@@ -15,6 +15,9 @@ class CSVHandler:
         dtype = {"WhiteElo": int, "BlackElo": int, "Result": str, "Moves": str}
         self.data = pd.read_csv(self.input_path, dtype=dtype)
 
+    def delete_output_file(self):
+        os.remove(self.output_path)
+
     def append_to_csv(self, df):
         df.to_csv(self.output_path, mode='a', header=not os.path.exists(self.output_path),index=False)
 

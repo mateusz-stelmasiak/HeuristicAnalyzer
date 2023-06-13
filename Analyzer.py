@@ -25,9 +25,16 @@ class Analyzer:
     def print_data(self):
         print(self.dataReader.data)
 
-    def run_analysis(self):
+    def run_analysis(self, save_interval=1000):
+        results = []
+        self.dataReader.delete_output_file()
 
         for index, row in tqdm(self.data.iterrows(), total=self.amount_to_analise, desc="Analyzing games"):
+
+            if index != 0 and index % save_interval == 0:
+                df = pd.concat(results, axis=0)
+                self.dataReader.append_to_csv(df)
+                results = []
 
             if index >= self.amount_to_analise:
                 break
@@ -40,10 +47,13 @@ class Analyzer:
             castling_analyzer_results = self.castling_analyzer.analytical_method(moves)
             result_data = pd.concat([result_data, castling_analyzer_results], axis=1)
 
-            developing_analyzer_results = self.developing_analyzer.analyze_game(moves)
-            result_data = pd.concat([result_data, developing_analyzer_results], axis=1)
+            # developing_analyzer_results = self.developing_analyzer.analyze_game(moves)
+            # result_data = pd.concat([result_data, developing_analyzer_results], axis=1)
 
-            self.dataReader.append_to_csv(result_data)
+            results.append(result_data)
+
+        df = pd.concat(results, axis=0)
+        self.dataReader.append_to_csv(df)
 
     def run_castling_analyzer(self, board):
         return

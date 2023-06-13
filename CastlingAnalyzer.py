@@ -37,24 +37,26 @@ class CastlingAnalyzer:
         }
         white_castled_flag = False
         black_castled_flag = False
+        white_turn = False #set to false so it can be flipped at the begining of the loop
 
         # if game didn't even last long enough to castle, break
         move_number = len(moves)
         if move_number < self.earliest_castling_turn_index:
             return pd.Series(result).to_frame().T
 
-        # end search where 'early is defined'
+        # end search where 'early' is defined or at the last turn
         last_searched_turn = min(self.early_turn_cutoff_index, move_number)
         # start the search from 5th turn
         for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
+            white_turn = not white_turn
             # print(f"Looking at {curr_move} (index {turn_index})")
 
             if white_castled_flag and black_castled_flag:
                 break
 
             # check for white castle
-            if not white_castled_flag:
+            if white_turn and not white_castled_flag:
                 castling_type_index = self.white_castling_moves.index(
                     curr_move) if curr_move in self.white_castling_moves else None
 
@@ -62,8 +64,9 @@ class CastlingAnalyzer:
                     castling_type = self.white_castling_types[castling_type_index]
                     result[castling_type] = turn_index // 2 + 1
                     white_castled_flag = True
+                    continue
 
-            if not black_castled_flag:
+            if not white_turn and not black_castled_flag:
                 castling_type_index = self.black_castling_moves.index(
                     curr_move) if curr_move in self.black_castling_moves else None
 
@@ -71,6 +74,7 @@ class CastlingAnalyzer:
                     castling_type = self.black_castling_types[castling_type_index]
                     result[castling_type] = turn_index // 2 + 1
                     black_castled_flag = True
+                    continue
 
         return pd.Series(result).to_frame().T
 
