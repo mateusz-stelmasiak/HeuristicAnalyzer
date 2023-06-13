@@ -15,8 +15,8 @@ class Analyzer:
         self.limit = chess.engine.Limit(depth=15)
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
-        self.developing_analyzer = DevelopingAnalyzer(self.limit)
-        self.castling_analyzer = CastlingAnalyzer()
+        self.developing_analyzer = DevelopingAnalyzer()
+        #self.castling_analyzer = CastlingAnalyzer()
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
             self.amount_to_analise = len(self.data.iterrows())
