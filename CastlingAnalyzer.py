@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, engine, limit):
         self.data_path = data_path
         self.output_file = data_path[:len(data_path) - 4] + "_castling.csv"
         self.castled_before_checks = [3, 4, 5, 6, 7, 8, 9, 10, 15]  # earliest castle is move 4
-        self.engine = Engine(EngineType.STOCKFISH)
-        self.limit = chess.engine.Limit(depth=15)
+        self.engine = engine
+        self.limit = limit
 
     def calculate_win_rates(self):
         data = pd.read_csv(self.output_file)
