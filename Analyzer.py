@@ -5,6 +5,7 @@ from tqdm import tqdm
 import CSVHandler
 from DevelopingAnalyzer import DevelopingAnalyzer
 from CastlingAnalyzer import CastlingAnalyzer
+from SwineAnalyzer import SwineAnalyzer
 from engines.Engine import EngineType, Engine
 
 
@@ -17,7 +18,8 @@ class Analyzer:
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
         self.developing_analyzer = DevelopingAnalyzer()
-        self.castling_analyzer = CastlingAnalyzer(self.engine,self.limit)
+        self.castling_analyzer = CastlingAnalyzer(self.engine, self.limit)
+        self.swine_analyzer = SwineAnalyzer(self.engine, self.limit)
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
             self.amount_to_analise = len(self.data)
@@ -44,11 +46,11 @@ class Analyzer:
                                         'BlackElo': [row['BlackElo']],
                                         'Result': [row['Result']]})
 
-            castling_analyzer_results = self.castling_analyzer.analyze_game(moves)
-            result_data = pd.concat([result_data, castling_analyzer_results], axis=1)
+            #result_data = pd.concat([result_data, self.castling_analyzer.analyze_game(moves)], axis=1)
 
-            # developing_analyzer_results = self.developing_analyzer.analyze_game(moves)
-            # result_data = pd.concat([result_data, developing_analyzer_results], axis=1)
+            #result_data = pd.concat([result_data, self.developing_analyzer.analyze_game(moves)], axis=1)
+
+            result_data = pd.concat([result_data, self.swine_analyzer.analyze_game(moves)], axis=1)
 
             results.append(result_data)
 
