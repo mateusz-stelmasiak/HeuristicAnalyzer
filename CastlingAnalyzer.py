@@ -57,9 +57,9 @@ class CastlingAnalyzer:
 
         # end search where 'early' is defined or at the last turn
         last_searched_turn = min(self.early_turn_cutoff_index, move_number)
-        analytical_res = self.analytical_method(moves, last_searched_turn)
-        #empirical_res = self.empirical_method(moves, last_searched_turn)
-        return pd.concat([analytical_res], axis=1)
+        #analytical_res = self.analytical_method(moves, last_searched_turn)
+        empirical_res = self.empirical_method(moves, last_searched_turn)
+        return pd.concat([empirical_res], axis=1)
 
     def empirical_method(self, moves, last_searched_turn):
         result = {
