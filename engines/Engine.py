@@ -33,10 +33,18 @@ class Engine:
 
         if path == '':
             return Exception("Platform not supported!")
-        return chess.engine.SimpleEngine.popen_uci(path)
+
+        engine = chess.engine.SimpleEngine.popen_uci(path)
+        engine.configure({'Threads': 3, "Hash": 4096})
+        return engine
 
     def get_best_move(self, board, limit):
-        result = self.engine.play(board, limit)
+        result = self.engine.analysis(board, limit, info=chess.engine.INFO_NONE)
+        analysis_res = result.wait()
+        return analysis_res.move
+
+    def get_best_move_old(self, board, limit):
+        result = self.engine.play(board, limit, info=chess.engine.INFO_NONE)
         return result.move
 
     def score_position(self, board, limit, pov):  # handle mates
@@ -59,4 +67,3 @@ class Engine:
     # close engine exe when destroying the object
     def __del__(self):
         self.engine.close()
-

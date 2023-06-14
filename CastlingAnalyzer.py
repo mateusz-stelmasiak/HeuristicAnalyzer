@@ -105,7 +105,7 @@ class CastlingAnalyzer:
 
                 # found a legal castling move
                 # evaluate if it's the best move
-                best_move = self.engine.get_best_move(self.board, self.limit)
+                best_move = self.engine.get_best_move_old(self.board, self.limit)
                 result[f"{player_color}CastlingConsiderationTurn"] = self.board.fullmove_number
                 result[f"{player_color}BestMoveAtConsiderationTurn"] = str(best_move.uci())
                 castled_flags[player_color] = True
