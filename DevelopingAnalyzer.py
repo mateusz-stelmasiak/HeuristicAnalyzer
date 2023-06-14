@@ -8,6 +8,9 @@ class DevelopingAnalyzer:
                        'b8': 'BlackKnight_b8', 'g8': 'BlackKnight_g8', 'c8': 'BlackBishop_c8', 'f8': 'BlackBishop_f8'}
 
     def analyze_game(self, moves):
+        return self.analytical_method(moves)
+
+    def analytical_method(self, moves):
         piece_moves = {k: 0 for k in self.pieces.keys()}
         moved_count = 0
         for idx, move in enumerate(moves):
