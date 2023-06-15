@@ -3,7 +3,7 @@ from sys import platform
 import chess
 import chess.engine
 import os
-
+import time
 
 # ALL CURRENTLY AVAILABLE ENGINES
 class EngineType(Enum):
@@ -44,7 +44,11 @@ class Engine:
         return analysis_res.move
 
     def get_best_move_old(self, board, limit):
+        start_time = time.time()
         result = self.engine.play(board, limit, info=chess.engine.INFO_NONE)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"found best move in in {execution_time} seconds.")
         return result.move
 
     def score_position(self, board, limit, pov):  # handle mates
