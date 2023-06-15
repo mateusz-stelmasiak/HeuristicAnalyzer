@@ -5,6 +5,7 @@ from engines.Engine import EngineType, Engine
 import matplotlib.pyplot as plt
 import chess.pgn
 
+
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
@@ -50,7 +51,7 @@ class CastlingAnalyzer:
         }
 
     def analyze_game(self, moves):
-        #self.print_as_pgn(moves)
+        # self.print_as_pgn(moves)
         # if game didn't even last long enough to castle, don't even start the analysis
         move_number = len(moves)
         if move_number < self.earliest_castling_turn_index:
@@ -59,8 +60,8 @@ class CastlingAnalyzer:
         # end search where 'early' is defined or at the last turn
         last_searched_turn = min(self.early_turn_cutoff_index, move_number)
         analytical_res = self.analytical_method(moves, last_searched_turn)
-        # empirical_res = self.empirical_method(moves, last_searched_turn)
-        return pd.concat([analytical_res], axis=1)
+        empirical_res = self.empirical_method(moves, last_searched_turn)
+        return pd.concat([analytical_res, empirical_res], axis=1)
 
     def empirical_method(self, moves, last_searched_turn):
         result = {
@@ -92,11 +93,11 @@ class CastlingAnalyzer:
                 break
 
             # found for both
-            if castled_flags["Black"] and castled_flags["White"]:
-                break
+            # if castled_flags["Black"] and castled_flags["White"]:
+            #     break
 
-            # this player's castling, has already been considered
-            if castled_flags[player_color]:
+            # this player's has lost castling rights
+            if not self.board.has_castling_rights(self.board.turn):
                 self.board.push(move_obj)
                 continue
 
@@ -107,10 +108,18 @@ class CastlingAnalyzer:
 
                 # found a legal castling move
                 # evaluate if it's the best move
-                best_move = self.engine.get_best_move_old(self.board, self.limit)
-                result[f"{player_color}CastlingConsiderationTurn"] = self.board.fullmove_number
-                result[f"{player_color}BestMoveAtConsiderationTurn"] = str(best_move.uci())
-                castled_flags[player_color] = True
+                best_move = self.engine.get_best_move(self.board, self.limit)
+                if result[f"{player_color}CastlingConsiderationTurn"] == self.fill_value:
+                    result[f"{player_color}CastlingConsiderationTurn"] = self.board.fullmove_number
+                    result[f"{player_color}BestMoveAtConsiderationTurn"] = str(best_move.uci())
+                else:
+                    result[f"{player_color}CastlingConsiderationTurn"] = str(result[
+                                                                                 f"{player_color}CastlingConsiderationTurn"]) + "," + str(
+                        self.board.fullmove_number)
+                    result[f"{player_color}BestMoveAtConsiderationTurn"] = result[
+                                                                               f"{player_color}BestMoveAtConsiderationTurn"] + "," + str(
+                        best_move.uci())
+                # castled_flags[player_color] = True
 
             self.board.push(move_obj)
 
@@ -131,7 +140,7 @@ class CastlingAnalyzer:
         for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
             white_turn = not white_turn
-            #print(f"Looking at {curr_move} (index {turn_index})")
+            # print(f"Looking at {curr_move} (index {turn_index})")
 
             if white_castled_flag and black_castled_flag:
                 break
