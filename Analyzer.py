@@ -37,9 +37,6 @@ class Analyzer:
         game.add_line(moves_arr)
         print(game.mainline())
 
-    def analyze_game(self):
-
-
     def run_analysis(self, save_interval=1000):
         results = []
         self.dataReader.delete_output_file()
@@ -77,5 +74,3 @@ class Analyzer:
 
         df = pd.concat(results, axis=0)
         self.dataReader.append_to_csv(df)
-
-
