@@ -9,7 +9,7 @@ import chess.pgn
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
-    def __init__(self, engine, limit):
+    def __init__(self):
         self.early_turn_cutoff_index = 15 * 2
         # start the search from 5th turn (10 element of the array) as the players cannot castle earlier
         self.earliest_castling_turn_index = 3 * 2
@@ -40,8 +40,8 @@ class CastlingAnalyzer:
         self.empty_result_df = pd.Series(empty_result_dict).to_frame().T
 
         self.board = chess.Board()
-        self.limit = limit
-        self.engine = engine
+        self.engine = Engine(EngineType.STOCKFISH)
+        self.limit = chess.engine.Limit(depth=20)
         self.castling_move_objects = {
             "White": [chess.Move.from_uci(self.castling_moves['white_short_castle']),
                       chess.Move.from_uci(self.castling_moves['white_long_castle']),
@@ -51,7 +51,6 @@ class CastlingAnalyzer:
         }
 
     def analyze_game(self, moves):
-        # self.print_as_pgn(moves)
         # if game didn't even last long enough to castle, don't even start the analysis
         move_number = len(moves)
         if move_number < self.earliest_castling_turn_index:

@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-
+from multiprocessing import Manager
 
 class CSVHandler:
 
@@ -10,6 +10,7 @@ class CSVHandler:
         self.output_path = output_path
         self.__load_data()
         self.__clean_data()
+        self.lock = Manager().Lock()
 
     def __load_data(self):
         dtype = {"WhiteElo": int, "BlackElo": int, "Result": str, "Moves": str}
@@ -22,7 +23,8 @@ class CSVHandler:
         os.remove(self.output_path)
 
     def append_to_csv(self, df):
-        df.to_csv(self.output_path, mode='a', header=not os.path.exists(self.output_path),index=False)
+        with self.lock:
+            df.to_csv(self.output_path, mode='a', header=not os.path.exists(self.output_path), index=False)
 
     def __clean_data(self):
         self.data = self.data.dropna()  # Remove rows with missing values

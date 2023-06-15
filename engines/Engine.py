@@ -35,20 +35,20 @@ class Engine:
             return Exception("Platform not supported!")
 
         engine = chess.engine.SimpleEngine.popen_uci(path)
-        engine.configure({'Threads': 4, "Hash": 8156, "SyzygyPath": "./syzygy"})
+        engine.configure({'Threads': 1, "Hash": 2048, "SyzygyPath": "./syzygy"})
         return engine
 
-    def get_best_move(self, board, limit):
+    def get_best_move_alt(self, board, limit):
         result = self.engine.analysis(board, limit, info=chess.engine.INFO_NONE)
         analysis_res = result.wait()
         return analysis_res.move
 
-    def get_best_move_old(self, board, limit):
-        start_time = time.time()
+    def get_best_move(self, board, limit):
+        #start_time = time.time()
         result = self.engine.play(board, limit, info=chess.engine.INFO_NONE)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"found best move in in {execution_time} seconds.")
+        #end_time = time.time()
+        #execution_time = end_time - start_time
+        #print(f"found best move in in {execution_time} seconds.")
         return result.move
 
     def score_position(self, board, limit, pov):  # handle mates

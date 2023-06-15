@@ -10,8 +10,7 @@ class CenterAnalyzer:
         self.data_path = data_path
         self.board = chess.Board()
         self.center_squares = [chess.E4, chess.D4,
-                               chess.E5,
-                               chess.D5, chess.E3, chess.D3, chess.E6, chess.D6]
+                               chess.E5, chess.D5]
         return
 
 
