@@ -9,7 +9,7 @@ import chess.pgn
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
-    def __init__(self):
+    def __init__(self,sf_depth_limit):
         self.early_turn_cutoff_index = 15 * 2
         # start the search from 5th turn (10 element of the array) as the players cannot castle earlier
         self.earliest_castling_turn_index = 3 * 2
@@ -41,7 +41,7 @@ class CastlingAnalyzer:
 
         self.board = chess.Board()
         self.engine = Engine(EngineType.STOCKFISH)
-        self.limit = chess.engine.Limit(depth=20)
+        self.limit = chess.engine.Limit(depth=sf_depth_limit)
         self.castling_move_objects = {
             "White": [chess.Move.from_uci(self.castling_moves['white_short_castle']),
                       chess.Move.from_uci(self.castling_moves['white_long_castle']),

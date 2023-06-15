@@ -14,18 +14,13 @@ from concurrent.futures import ProcessPoolExecutor
 
 
 class Analyzer:
-    def __init__(self, data_path, output_path, amount_to_analise=None,amount_of_workers=1):
+    def __init__(self, data_path, output_path, amount_to_analise=None, amount_of_workers=1):
         self.data_path = data_path
         self.dataReader = CSVHandler.CSVHandler(data_path, output_path)
         self.data = self.dataReader.data
 
         self.amount_of_workers = amount_of_workers
-        # self.engine = Engine(EngineType.STOCKFISH)
-        # self.limit = chess.engine.Limit(depth=21)
-
-        self.developing_analyzer = DevelopingAnalyzer()
-        self.castling_analyzer = CastlingAnalyzer()
-        # self.swine_analyzer = SwineAnalyzer(self.engine, self.limit)
+        self.sf_depth_limit = 20
 
         self.amount_to_analise = amount_to_analise
         if not amount_to_analise:
@@ -46,8 +41,8 @@ class Analyzer:
         print(game.mainline())
 
     @staticmethod
-    def analyze_game(index, row):
-        castling_analyzer = CastlingAnalyzer()
+    def analyze_game(index, row, sf_depth_limit):
+        castling_analyzer = CastlingAnalyzer(sf_depth_limit)
 
         moves = eval(row['Moves'])
         result_data = pd.DataFrame({"Id": index,
@@ -70,7 +65,7 @@ class Analyzer:
         try:
             with ProcessPoolExecutor(max_workers=self.amount_of_workers) as executor:
                 game_iterator = iter(self.data.iterrows())
-                futures = {executor.submit(Analyzer.analyze_game, index, row) for index, row in
+                futures = {executor.submit(Analyzer.analyze_game, index, row, self.sf_depth_limit) for index, row in
                            itertools.islice(game_iterator, self.amount_to_analise)}
                 completed_games = 0
 
