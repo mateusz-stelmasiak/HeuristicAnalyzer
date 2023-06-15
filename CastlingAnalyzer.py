@@ -70,10 +70,6 @@ class CastlingAnalyzer:
             "WhiteBestMoveAtConsiderationTurn": self.fill_value,
             "BlackBestMoveAtConsiderationTurn": self.fill_value
         }
-        castled_flags = {
-            "White": False,
-            "Black": False
-        }
 
         # set up the board and make move up to earliest castling turn
         self.board.reset()
@@ -92,9 +88,9 @@ class CastlingAnalyzer:
                 print(f"Illegal move found in game!")
                 break
 
-            # found for both
-            # if castled_flags["Black"] and castled_flags["White"]:
-            #     break
+            # both players have lost castling rights, break
+            if not self.board.has_castling_rights(True) and not self.board.has_castling_rights(False):
+                break
 
             # this player's has lost castling rights
             if not self.board.has_castling_rights(self.board.turn):
@@ -110,7 +106,7 @@ class CastlingAnalyzer:
                 # evaluate if it's the best move
                 best_move = self.engine.get_best_move(self.board, self.limit)
                 if result[f"{player_color}CastlingConsiderationTurn"] == self.fill_value:
-                    result[f"{player_color}CastlingConsiderationTurn"] = self.board.fullmove_number
+                    result[f"{player_color}CastlingConsiderationTurn"] = str(self.board.fullmove_number)
                     result[f"{player_color}BestMoveAtConsiderationTurn"] = str(best_move.uci())
                 else:
                     result[f"{player_color}CastlingConsiderationTurn"] = str(result[
@@ -168,15 +164,7 @@ class CastlingAnalyzer:
 
         return pd.Series(result).to_frame().T
 
-    def print_as_pgn(self, moves):
-        game = chess.pgn.Game()
-        moves_arr = []
-        for move in moves:
-            move_obj = chess.Move.from_uci(move)
-            moves_arr.append(move_obj)
 
-        game.add_line(moves_arr)
-        print(game.mainline())
 
 # maybe steal?
 # def calculate_win_rates(self):

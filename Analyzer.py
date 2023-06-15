@@ -27,41 +27,55 @@ class Analyzer:
     def print_data(self):
         print(self.dataReader.data)
 
+    def print_as_pgn(self, moves):
+        game = chess.pgn.Game()
+        moves_arr = []
+        for move in moves:
+            move_obj = chess.Move.from_uci(move)
+            moves_arr.append(move_obj)
+
+        game.add_line(moves_arr)
+        print(game.mainline())
+
+    def analyze_game(self):
+
+
     def run_analysis(self, save_interval=1000):
         results = []
         self.dataReader.delete_output_file()
 
-        for index, row in self.data.iterrows():
+        try:
+            for index, row in tqdm(self.data.iterrows(), total=self.amount_to_analise, desc="Analyzing games"):
 
-            if index != 0 and index % save_interval == 0:
-                df = pd.concat(results, axis=0)
-                self.dataReader.append_to_csv(df)
-                results = []
+                if index != 0 and index % save_interval == 0:
+                    df = pd.concat(results, axis=0)
+                    self.dataReader.append_to_csv(df)
+                    results = []
 
-            if index >= self.amount_to_analise:
-                break
+                if index >= self.amount_to_analise:
+                    break
 
-            moves = eval(row['Moves'])
-            result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
-                                        'BlackElo': [row['BlackElo']],
-                                        'Result': [row['Result']]})
+                moves = eval(row['Moves'])
+                result_data = pd.DataFrame({'WhiteElo': [row['WhiteElo']],
+                                            'BlackElo': [row['BlackElo']],
+                                            'Result': [row['Result']]})
 
-            result_data = pd.concat([result_data, self.castling_analyzer.analyze_game(moves)], axis=1)
+                # CASTLING ANALYZER
+                result_data = pd.concat([result_data, self.castling_analyzer.analyze_game(moves)], axis=1)
+                # DEVELOPMENT ANALYZER
+                # result_data = pd.concat([result_data, self.developing_analyzer.analyze_game(moves)], axis=1)
+                # SWINE ANALYZER
+                # result_data = pd.concat([result_data, self.swine_analyzer.analyze_game(moves)], axis=1)
 
-            #result_data = pd.concat([result_data, self.developing_analyzer.analyze_game(moves)], axis=1)
-
-            #result_data = pd.concat([result_data, self.swine_analyzer.analyze_game(moves)], axis=1)
-
-            results.append(result_data)
+                results.append(result_data)
+        except KeyboardInterrupt:
+            print(f"Finished analysis at {index}")
+            print("Saving data and closing the program...")
+            df = pd.concat(results, axis=0)
+            self.dataReader.append_to_csv(df)
+            raise SystemExit
 
         df = pd.concat(results, axis=0)
         self.dataReader.append_to_csv(df)
 
-    def run_castling_analyzer(self, board):
-        return
-        # HEURISTIC: Castle soon
-        # castling_analyzer = CastlingAnalyzer.CastlingAnalyzer(data_file_path)
-        # castling_analyzer.calculate_castling_turns()
-        # castling_analyzer.calculate_win_rates()
-        # castling_analyzer.calculate_castling_effectiveness()
-        # castling_analyzer.analyse_castling_data()
+
