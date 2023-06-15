@@ -35,7 +35,7 @@ class Engine:
             return Exception("Platform not supported!")
 
         engine = chess.engine.SimpleEngine.popen_uci(path)
-        engine.configure({'Threads': 3, "Hash": 4096})
+        engine.configure({'Threads': 4, "Hash": 8156, "SyzygyPath": "./syzygy"})
         return engine
 
     def get_best_move(self, board, limit):

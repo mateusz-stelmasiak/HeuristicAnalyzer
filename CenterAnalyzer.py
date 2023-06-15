@@ -3,56 +3,17 @@ import pandas as pd
 import chess
 import matplotlib.pyplot as plt
 
+
 # HEURISTIC: "Control the center"
 class CenterAnalyzer:
     def __init__(self, data_path):
         self.data_path = data_path
         self.board = chess.Board()
-        self.center_squares = [chess.E4, chess.D4, chess.E5, chess.D5, chess.E3, chess.D3, chess.E6, chess.D6]
-        self.buffer_size = 100
-        self.output_file = data_path[:len(data_path) - 4] + "_center_analysis.csv"
+        self.center_squares = [chess.E4, chess.D4,
+                               chess.E5,
+                               chess.D5, chess.E3, chess.D3, chess.E6, chess.D6]
         return
 
-    def create_plot(self):
-        data = pd.read_csv(self.output_file)
-        white_avg_center_control = []
-        black_avg_center_control = []
-
-        for index, row in data.iterrows():
-            print(f"[{index + 1}/{len(data.index)}]Analysing...")
-
-            center_control_list = eval(row["center_control"])
-            game_turns = len(center_control_list)
-
-            for i, control_tuple in enumerate(center_control_list):
-                if i >= len(white_avg_center_control):
-                    white_avg_center_control.append(0)
-                    black_avg_center_control.append(0)
-
-                if len(control_tuple) == 5:
-                    _, _, _, white_control, black_control = control_tuple
-                    black_avg_center_control[i] += black_control / game_turns
-                elif len(control_tuple) == 3:
-                    _, _, white_control = control_tuple
-                else:
-                    continue
-
-                white_avg_center_control[i] += white_control / game_turns
-
-        turns = len(white_avg_center_control)
-        white_avg_center_control = [control / turns for control in white_avg_center_control]
-        black_avg_center_control = [-control / turns for control in black_avg_center_control]
-
-        plt.plot(white_avg_center_control, label="White", color='blue')
-        plt.plot(black_avg_center_control, label="Black", color='black')
-        plt.xlabel("Turns")
-        plt.ylabel("Avg Center Control")
-        plt.axhline(0, color='grey', linestyle="dashed")
-        plt.xlim(right=150)
-        plt.legend(loc="upper right")
-        plt.title("Average Center control by Turns")
-
-        plt.show()
 
     def evaluate_center(self, board, perspective):
         """Evaluates the number of center squares attacked by a player, counting multiple attacks."""
@@ -102,8 +63,46 @@ class CenterAnalyzer:
         self.__save_to_csv(data, self.output_file)
         return data
 
-    def __save_to_csv(self, df, filename):
-        df.to_csv(filename, mode='a', header=not os.path.exists(filename))
 
-    def __load_data(self):
-        return pd.read_csv(self.data_path)
+
+ # def create_plot(self):
+ #        data = pd.read_csv(self.output_file)
+ #        white_avg_center_control = []
+ #        black_avg_center_control = []
+ #
+ #        for index, row in data.iterrows():
+ #            print(f"[{index + 1}/{len(data.index)}]Analysing...")
+ #
+ #            center_control_list = eval(row["center_control"])
+ #            game_turns = len(center_control_list)
+ #
+ #            for i, control_tuple in enumerate(center_control_list):
+ #                if i >= len(white_avg_center_control):
+ #                    white_avg_center_control.append(0)
+ #                    black_avg_center_control.append(0)
+ #
+ #                if len(control_tuple) == 5:
+ #                    _, _, _, white_control, black_control = control_tuple
+ #                    black_avg_center_control[i] += black_control / game_turns
+ #                elif len(control_tuple) == 3:
+ #                    _, _, white_control = control_tuple
+ #                else:
+ #                    continue
+ #
+ #                white_avg_center_control[i] += white_control / game_turns
+ #
+ #        turns = len(white_avg_center_control)
+ #        white_avg_center_control = [control / turns for control in white_avg_center_control]
+ #        black_avg_center_control = [-control / turns for control in black_avg_center_control]
+ #
+ #        plt.plot(white_avg_center_control, label="White", color='blue')
+ #        plt.plot(black_avg_center_control, label="Black", color='black')
+ #        plt.xlabel("Turns")
+ #        plt.ylabel("Avg Center Control")
+ #        plt.axhline(0, color='grey', linestyle="dashed")
+ #        plt.xlim(right=150)
+ #        plt.legend(loc="upper right")
+ #        plt.title("Average Center control by Turns")
+ #
+ #        plt.show()
+
