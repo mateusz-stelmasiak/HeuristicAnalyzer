@@ -3,7 +3,7 @@ import chess
 import pandas as pd
 from engines.Engine import EngineType, Engine
 import matplotlib.pyplot as plt
-
+import chess.pgn
 
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
@@ -11,7 +11,7 @@ class CastlingAnalyzer:
     def __init__(self, engine, limit):
         self.early_turn_cutoff_index = 15 * 2
         # start the search from 5th turn (10 element of the array) as the players cannot castle earlier
-        self.earliest_castling_turn_index = 5 * 2
+        self.earliest_castling_turn_index = 3 * 2
         self.fill_value = "-"  # value that is put if player didn't castle at all
         self.castling_moves = {
             "white_short_castle": "e1g1",
@@ -50,6 +50,7 @@ class CastlingAnalyzer:
         }
 
     def analyze_game(self, moves):
+        #self.print_as_pgn(moves)
         # if game didn't even last long enough to castle, don't even start the analysis
         move_number = len(moves)
         if move_number < self.earliest_castling_turn_index:
@@ -57,9 +58,9 @@ class CastlingAnalyzer:
 
         # end search where 'early' is defined or at the last turn
         last_searched_turn = min(self.early_turn_cutoff_index, move_number)
-        #analytical_res = self.analytical_method(moves, last_searched_turn)
-        empirical_res = self.empirical_method(moves, last_searched_turn)
-        return pd.concat([empirical_res], axis=1)
+        analytical_res = self.analytical_method(moves, last_searched_turn)
+        # empirical_res = self.empirical_method(moves, last_searched_turn)
+        return pd.concat([analytical_res], axis=1)
 
     def empirical_method(self, moves, last_searched_turn):
         result = {
@@ -83,6 +84,7 @@ class CastlingAnalyzer:
         for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
             move_obj = chess.Move.from_uci(curr_move)
+
             player_color = "White" if self.board.turn else "Black"
 
             if not self.board.is_legal(move_obj):
@@ -129,7 +131,7 @@ class CastlingAnalyzer:
         for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
             curr_move = moves[turn_index]
             white_turn = not white_turn
-            # print(f"Looking at {curr_move} (index {turn_index})")
+            #print(f"Looking at {curr_move} (index {turn_index})")
 
             if white_castled_flag and black_castled_flag:
                 break
@@ -156,6 +158,16 @@ class CastlingAnalyzer:
                     continue
 
         return pd.Series(result).to_frame().T
+
+    def print_as_pgn(self, moves):
+        game = chess.pgn.Game()
+        moves_arr = []
+        for move in moves:
+            move_obj = chess.Move.from_uci(move)
+            moves_arr.append(move_obj)
+
+        game.add_line(moves_arr)
+        print(game.mainline())
 
 # maybe steal?
 # def calculate_win_rates(self):
