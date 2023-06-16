@@ -26,7 +26,6 @@ class DataPreparator:
     # takes an optional "distribution" array and splits the ammount of data in each file accordin to it
     # ex. split_into_files(3,[0.2,0.2,0.6]) would split the data into 3 files, first two containing 20% of
     # the data and the last one containing 60%
-
     def split_into_files(self, n_of_files, distribution=None):
         df = self.csv_handler.data
 
@@ -41,8 +40,12 @@ class DataPreparator:
             if not np.isclose(sum(distribution), 1):
                 raise ValueError("Sum of distribution array must be equal to 1")
 
-            split_points = np.cumsum(distribution)[:-1] * len(df)
-            split_dfs = np.split(df, split_points)
+            split_dfs = []
+            start = 0
+            for dist in distribution:
+                end = start + int(dist * len(df))
+                split_dfs.append(df.iloc[start:end])
+                start = end
 
         print(f"Saving to separate CSV files...")
         for i, split_df in enumerate(split_dfs):
