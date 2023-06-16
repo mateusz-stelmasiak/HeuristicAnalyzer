@@ -35,7 +35,7 @@ class Engine:
             return Exception("Platform not supported!")
 
         engine = chess.engine.SimpleEngine.popen_uci(path)
-        engine.configure({'Threads': 1, "Hash": 2048, "SyzygyPath": "./syzygy"})
+        engine.configure({'Threads': 1, "Hash": 32, "SyzygyPath": "./syzygy"})
         return engine
 
     def get_best_move_alt(self, board, limit):
