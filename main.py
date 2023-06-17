@@ -33,8 +33,7 @@ if __name__ == '__main__':
     # ANALISIS CODE
     skiping_first = 0
     n_cores = cpu_count()  # number of logical cores on the machine
-    analyzer = Analyzer.Analyzer("./data/elite_data_split_0-24999.csv",
-                                 f"./results/results_elite_{skiping_first}_24999.csv",
+    analyzer = Analyzer.Analyzer("./data/elite_data.csv", "./data/swine_results.csv",
                                  amount_of_workers=n_cores)
     print(f"Starting analysis...")
     start_time = time.time()

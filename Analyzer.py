@@ -42,8 +42,9 @@ class Analyzer:
 
     @staticmethod
     def analyze_game(index, row, sf_depth_limit):
-        castling_analyzer = CastlingAnalyzer(sf_depth_limit)
-
+        # castling_analyzer = CastlingAnalyzer(sf_depth_limit)
+        # development_analyzer = DevelopingAnalyzer()
+        swine_analyzer = SwineAnalyzer()
         moves = eval(row['Moves'])
         result_data = pd.DataFrame({"Id": index,
                                     'WhiteElo': [row['WhiteElo']],
@@ -51,11 +52,11 @@ class Analyzer:
                                     'Result': [row['Result']]})
 
         # CASTLING ANALYZER
-        result_data = pd.concat([result_data, castling_analyzer.analyze_game(moves)], axis=1)
+        # result_data = pd.concat([result_data, castling_analyzer.analyze_game(moves)], axis=1)
         # DEVELOPMENT ANALYZER
-        # result_data = pd.concat([result_data, self.developing_analyzer.analyze_game(moves)], axis=1)
+        # result_data = pd.concat([result_data, development_analyzer.analyze_game(moves)], axis=1)
         # SWINE ANALYZER
-        # result_data = pd.concat([result_data, self.swine_analyzer.analyze_game(moves)], axis=1)
+        result_data = pd.concat([result_data, swine_analyzer.analyze_game(moves)], axis=1)
         return result_data
 
     def run_analysis(self, save_interval=50,skip_first=0):
