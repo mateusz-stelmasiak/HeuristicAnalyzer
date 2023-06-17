@@ -99,6 +99,11 @@ class SwineAnalyzer:
             board.push_uci(move)
             legal_moves = board.generate_legal_moves()
             print(legal_moves)
+            rook_moves = [m for m in legal_moves if str(m)[1] == '7' and board.piece_at(m.from_square).symbol() == 'R'
+                          or str(m)[1] == '2' and board.piece_at(m.from_square).symbol() == 'r']
+            for rook_moves in legal_moves:
+                print(f"Found possible rook move: {rook_moves}")
+
         # for move in moves:
         #     # Create a new chess.Board object from the current move list
         #     board = chess.Board()
