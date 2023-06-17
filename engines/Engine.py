@@ -1,8 +1,10 @@
+import pickle
 from enum import Enum
 from sys import platform
 import chess
 import chess.engine
 import os
+import pandas as pd
 import time
 
 # ALL CURRENTLY AVAILABLE ENGINES
@@ -21,6 +23,11 @@ class Engine:
     def __init__(self, engine):
         self.engine = self.__load_engine(engine)
         self.name = engine.name
+        self.move_file = "moves.csv"
+        if os.path.exists(self.move_file):
+            self.move_dict = pd.read_csv(self.move_file, index_col=0).squeeze("columns").to_dict()
+        else:
+            self.move_dict = {}
 
     def __load_engine(self, engine):
         engine_name = engine.value
@@ -35,7 +42,7 @@ class Engine:
             return Exception("Platform not supported!")
 
         engine = chess.engine.SimpleEngine.popen_uci(path)
-        engine.configure({'Threads': 1, "Hash": 2048, "SyzygyPath": "./syzygy"})
+        engine.configure({'Threads': 1, "Hash": 2048})
         return engine
 
     def get_best_move_alt(self, board, limit):
@@ -44,11 +51,17 @@ class Engine:
         return analysis_res.move
 
     def get_best_move(self, board, limit):
-        #start_time = time.time()
+        board_fen = board.fen()
+
+        if board_fen in self.move_dict:
+            return self.move_dict[board_fen]
+
         result = self.engine.play(board, limit, info=chess.engine.INFO_NONE)
-        #end_time = time.time()
-        #execution_time = end_time - start_time
-        #print(f"found best move in in {execution_time} seconds.")
+        self.move_dict[board_fen] = result.move
+
+        df = pd.DataFrame({'FEN': [board_fen], 'Move': [result.move]})
+        df.to_csv(self.move_file, mode='a', header=not os.path.exists(self.move_file), index=False)
+
         return result.move
 
     def score_position(self, board, limit, pov):  # handle mates
