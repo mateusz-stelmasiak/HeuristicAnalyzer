@@ -21,22 +21,24 @@ if __name__ == '__main__':
     # CODE HERE
     # ------------
 
-    #GET BASIC STATS
+    # GET BASIC STATS
     # bsg = BasicStatsGetter()
     # for path in data_paths:
     #     bsg.get_basic_stats(path)
 
-    #PREPARE DATA
-    # dp = DataPreparator("./data/sub_elite_data.csv", "./data/sub_elite_data_split.csv")
-    # dp.split_into_files(3, [0.015, 0.485, 0.5])
-    
+    # PREPARE DATA
+    # dp = DataPreparator("./data/elite_data.csv", "./data/elite_data_split.csv")
+    # dp.split_into_files(4)
+
     # ANALISIS CODE
+    skiping_first = 0
     n_cores = cpu_count()  # number of logical cores on the machine
-    analyzer = Analyzer.Analyzer("data/sub_elite_data.csv", "./results/results_sub_elite.csv",
+    analyzer = Analyzer.Analyzer("./data/elite_data_split_0-24999.csv",
+                                 f"./results/results_elite_{skiping_first}_24999.csv",
                                  amount_of_workers=n_cores)
     print(f"Starting analysis...")
     start_time = time.time()
-    analyzer.run_analysis()
+    analyzer.run_analysis(skip_first=skiping_first)
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Analysis completed in {execution_time:.3f} seconds.")
