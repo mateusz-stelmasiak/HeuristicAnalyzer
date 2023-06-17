@@ -7,9 +7,9 @@ from engines.Engine import Engine, EngineType
 class SwineAnalyzer:
 
     def __init__(self, sf_depth_limit):
-        self.board = chess.Board()
-        self.engine = Engine(EngineType.STOCKFISH)
-        self.limit = chess.engine.Limit(depth=sf_depth_limit)
+        #self.board = chess.Board()
+        # self.engine = Engine(EngineType.STOCKFISH)
+        # self.limit = chess.engine.Limit(depth=sf_depth_limit)
 
         self.current_positions = {
             'whiteKing': 'e1', 'blackKing': 'e8',
@@ -93,39 +93,39 @@ class SwineAnalyzer:
 
         return pd.DataFrame(self.results, index=[0])
 
-    def empirical_method(self, moves):
+    def empirical_method(self, moves): # i think it doesnt work, but checking this might not have much sense
         board = chess.Board()
+
+        # Initialize the result
+        result = {
+            "WhiteSwineBestMoveCount": 0,
+            "WhiteSwineNonBestMoveCount": 0,
+            "BlackSwineBestMoveCount": 0,
+            "BlackSwineNonBestMoveCount": 0,
+        }
+
         for move in moves:
             board.push_uci(move)
             legal_moves = board.generate_legal_moves()
-            print(legal_moves)
+
             rook_moves = [m for m in legal_moves if str(m)[1] == '7' and board.piece_at(m.from_square).symbol() == 'R'
                           or str(m)[1] == '2' and board.piece_at(m.from_square).symbol() == 'r']
-            for rook_moves in legal_moves:
-                print(f"Found possible rook move: {rook_moves}")
 
-        # for move in moves:
-        #     # Create a new chess.Board object from the current move list
-        #     board = chess.Board()
-        #     for m in moves:
-        #         board.push_san(m)
-        #
-        #     # Generate a list of all legal moves
-        #     legal_moves = list(board.legal_moves)
-        #
-        #     # Filter the moves to only include those where a rook moves to the 7th (or 2nd) rank
-        #     rook_moves = [m for m in legal_moves if str(m)[1] == '7' and board.piece_at(m.from_square).symbol() == 'R'
-        #                   or str(m)[1] == '2' and board.piece_at(m.from_square).symbol() == 'r']
-        #
-        #     # Use the engine to evaluate the rook moves
-        #     for rook_move in rook_moves:
-        #         result = self.engine.play(board, self.limit)
-        #
-        #         # If the move is the best one according to Stockfish
-        #         if rook_move == result.move:
-        #             if str(rook_move)[1] == '7':
-        #                 self.results['WhiteSingleSwine'] = True
-        #             else:  # str(rook_move)[1] == '2'
-        #                 self.results['BlackSingleSwine'] = True
-        #
-        # return pd.DataFrame(self.results, index=[0])
+            # Check if rook can move to 7th or 2nd rank.
+            if rook_moves:
+                # Get the best move
+                best_move = self.engine.get_best_move(board, self.limit)
+
+                # Check the color of the player
+                if board.turn:
+                    player_color = "White"
+                else:
+                    player_color = "Black"
+
+                # If the best move is in rook_moves, increment best move count, else non-best move count.
+                if best_move in rook_moves:
+                    result[f"{player_color}SwineBestMoveCount"] += 1
+                else:
+                    result[f"{player_color}SwineNonBestMoveCount"] += 1
+
+        return pd.DataFrame(result, index=[0])
