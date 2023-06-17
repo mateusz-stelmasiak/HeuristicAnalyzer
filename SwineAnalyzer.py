@@ -8,8 +8,8 @@ class SwineAnalyzer:
 
     def __init__(self, sf_depth_limit):
         #self.board = chess.Board()
-        self.engine = Engine(EngineType.STOCKFISH)
-        self.limit = chess.engine.Limit(depth=sf_depth_limit)
+        # self.engine = Engine(EngineType.STOCKFISH)
+        # self.limit = chess.engine.Limit(depth=sf_depth_limit)
 
         self.current_positions = {
             'whiteKing': 'e1', 'blackKing': 'e8',
@@ -25,7 +25,7 @@ class SwineAnalyzer:
         }
 
     def analyze_game(self, moves):
-        return self.empirical_method(moves)
+        return self.analytical_method(moves)
 
     def analytical_method(self, moves):
         for move in moves:
