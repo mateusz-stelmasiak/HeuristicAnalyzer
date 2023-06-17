@@ -31,12 +31,13 @@ if __name__ == '__main__':
     # dp.split_into_files(4)
     
     # ANALISIS CODE
+    skiping_first = 4530
     n_cores = cpu_count()  # number of logical cores on the machine
-    analyzer = Analyzer.Analyzer("data/elite_data.csv", "./results/results_elite.csv",
+    analyzer = Analyzer.Analyzer("./data/elite_data_split_0-24999.csv", f"./results/results_elite_{skiping_first}_24999.csv",
                                  amount_of_workers=n_cores)
     print(f"Starting analysis...")
     start_time = time.time()
-    analyzer.run_analysis()
+    analyzer.run_analysis(skip_first=skiping_first)
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Analysis completed in {execution_time:.3f} seconds.")

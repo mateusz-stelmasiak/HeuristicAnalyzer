@@ -58,13 +58,14 @@ class Analyzer:
         # result_data = pd.concat([result_data, self.swine_analyzer.analyze_game(moves)], axis=1)
         return result_data
 
-    def run_analysis(self, save_interval=50):
+    def run_analysis(self, save_interval=50,skip_first=0):
         results = []
         self.dataReader.delete_output_file()
 
         try:
             with ProcessPoolExecutor(max_workers=self.amount_of_workers) as executor:
                 game_iterator = iter(self.data.iterrows())
+                [next(game_iterator) for _ in range(skip_first)]
                 futures = {executor.submit(Analyzer.analyze_game, index, row, self.sf_depth_limit) for index, row in
                            itertools.islice(game_iterator, self.amount_to_analise)}
                 completed_games = 0
@@ -82,7 +83,7 @@ class Analyzer:
                             self.dataReader.append_to_csv(df)
                             results = []
 
-                    print(f"Completed {completed_games}/{self.amount_to_analise} games")
+                    print(f"Completed {completed_games}/{self.amount_to_analise-skip_first} games")
 
         except KeyboardInterrupt:
             print("Saving data and closing the program...")
