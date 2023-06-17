@@ -41,7 +41,6 @@ class BasicStatsGetter:
         all_elo_avr = all_elo.mean()
         all_elo_std = all_elo.std()
 
-        # Draw a histogram of WhiteElo and BlackElo
         return white_elo_avr, black_elo_avr, white_elo_std, black_elo_std, all_elo_avr, all_elo_std
 
     def get_win_rates(self, data):
@@ -52,7 +51,7 @@ class BasicStatsGetter:
 
     def draw_wr_piechart(self, white_wr, black_wr, draw_rate):
         # Data to plot
-        labels = 'White Win Rate', 'Black Win Rate', 'Draw Rate'
+        labels = 'Wygrane białych', 'Wygrane czarnych', 'Remisy'
         sizes = [white_wr, black_wr, draw_rate]
         colors = ['#e8fcff','#00425c', '#769ba8']
         explode = (0.1, 0, 0)  # explode 1st slice
@@ -64,10 +63,12 @@ class BasicStatsGetter:
                                 colors=colors,
                                 startangle=160,
                                 autopct='%1.1f%%',
-                                shadow=True)
+                                shadow=True,
+                                  )
 
         # Add a legend
         plt.legend(wedges, labels, loc="upper right")
+        plt.title("Wyniki rozgrywek w partiach silników szachowych")
 
         # Equal aspect ratio ensures that pie is drawn as a circle.
         plt.axis('equal')
@@ -78,6 +79,8 @@ class BasicStatsGetter:
         # Create subplots
         all_elo = pd.concat([data['WhiteElo'], data['BlackElo']])
 
-        plt.hist(all_elo, bins=30, alpha=0.5, label='ELO')
-        plt.legend(loc='upper right')
+        plt.hist(all_elo, bins=60, alpha=0.9,color="#00425c")
+        plt.xlabel("punkty ELO")
+        plt.ylabel("liczba graczy")
+        plt.title("Rozkład ELO w partiach silników szachowych")
         plt.show()
