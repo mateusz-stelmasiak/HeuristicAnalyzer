@@ -9,7 +9,7 @@ import chess.pgn
 # HEURISTIC: "Castle soon (to protect your king and develop your rook)"
 class CastlingAnalyzer:
 
-    def __init__(self,sf_depth_limit):
+    def __init__(self, sf_depth_limit):
         self.early_turn_cutoff_index = 15 * 2
         # start the search from 5th turn (10 element of the array) as the players cannot castle earlier
         self.earliest_castling_turn_index = 3 * 2
@@ -120,6 +120,68 @@ class CastlingAnalyzer:
 
         return pd.Series(result).to_frame().T
 
+    # empirical method modified for TCEC data
+    # we don't need stockfish to check the best move
+    # we just check what the engines did
+    def empirical_method_TCEC(self, moves, last_searched_turn):
+        result = {
+            "WhiteCastlingConsiderationTurn": self.fill_value,
+            "BlackCastlingConsiderationTurn": self.fill_value,
+            "WhiteBestMoveAtConsiderationTurn": self.fill_value,
+            "BlackBestMoveAtConsiderationTurn": self.fill_value
+        }
+
+        # set up the board and make move up to earliest castling turn
+        self.board.reset()
+        for i in range(0, self.earliest_castling_turn_index):
+            curr_move = moves[i]
+            move_obj = chess.Move.from_uci(curr_move)
+            self.board.push(move_obj)
+
+        for turn_index in range(self.earliest_castling_turn_index, last_searched_turn):
+            curr_move = moves[turn_index]
+            move_obj = chess.Move.from_uci(curr_move)
+
+            player_color = "White" if self.board.turn else "Black"
+
+            if not self.board.is_legal(move_obj):
+                print(f"Illegal move found in game!")
+                break
+
+            # both players have lost castling rights, break
+            if not self.board.has_castling_rights(True) and not self.board.has_castling_rights(False):
+                break
+
+            # this player's has lost castling rights
+            if not self.board.has_castling_rights(self.board.turn):
+                self.board.push(move_obj)
+                continue
+
+            # check if the player can castle instead
+            for castling_move in self.castling_move_objects[player_color]:
+                if not self.board.is_legal(castling_move):
+                    continue
+
+                # found a legal castling move
+                best_move = "-"
+                if (turn_index + 1) < len(moves):
+                    best_move = moves[turn_index + 1]
+
+                if result[f"{player_color}CastlingConsiderationTurn"] == self.fill_value:
+                    result[f"{player_color}CastlingConsiderationTurn"] = str(self.board.fullmove_number)
+                    result[f"{player_color}BestMoveAtConsiderationTurn"] = str(best_move.uci())
+                else:
+                    result[f"{player_color}CastlingConsiderationTurn"] = str(result[
+                                                                                 f"{player_color}CastlingConsiderationTurn"]) + "," + str(
+                        self.board.fullmove_number)
+                    result[f"{player_color}BestMoveAtConsiderationTurn"] = result[
+                                                                               f"{player_color}BestMoveAtConsiderationTurn"] + "," + str(
+                        best_move.uci())
+
+            self.board.push(move_obj)
+
+        return pd.Series(result).to_frame().T
+
     def analytical_method(self, moves, last_searched_turn):
         # print(f"Looking for castling in {moves}")
         result = {
@@ -162,8 +224,6 @@ class CastlingAnalyzer:
                     continue
 
         return pd.Series(result).to_frame().T
-
-
 
 # maybe steal?
 # def calculate_win_rates(self):
