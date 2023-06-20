@@ -54,8 +54,7 @@ class Engine:
         board_fen = board.fen()
 
         if board_fen in self.move_dict:
-            return self.move_dict[board_fen]
-
+            return chess.Move.from_uci(self.move_dict[board_fen])
         result = self.engine.play(board, limit, info=chess.engine.INFO_NONE)
         self.move_dict[board_fen] = result.move
 
