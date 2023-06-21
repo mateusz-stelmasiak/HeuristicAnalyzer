@@ -1,11 +1,13 @@
 import concurrent
 import itertools
+import os
 
 import chess
 import pandas as pd
 from tqdm import tqdm
 
 import CSVHandler
+from CenterAnalyzer import CenterAnalyzer
 from DevelopingAnalyzer import DevelopingAnalyzer
 from CastlingAnalyzer import CastlingAnalyzer
 from SwineAnalyzer import SwineAnalyzer
@@ -42,9 +44,10 @@ class Analyzer:
 
     @staticmethod
     def analyze_game(index, row, sf_depth_limit):
-        # castling_analyzer = CastlingAnalyzer(sf_depth_limit)
-        # development_analyzer = DevelopingAnalyzer()
-        swine_analyzer = SwineAnalyzer()
+        #castling_analyzer = CastlingAnalyzer(sf_depth_limit)
+        #development_analyzer = DevelopingAnalyzer(sf_depth_limit)
+        # swine_analyzer = SwineAnalyzer(sf_depth_limit)
+        center_analyzer = CenterAnalyzer()
         moves = eval(row['Moves'])
         result_data = pd.DataFrame({"Id": index,
                                     'WhiteElo': [row['WhiteElo']],
@@ -54,9 +57,11 @@ class Analyzer:
         # CASTLING ANALYZER
         # result_data = pd.concat([result_data, castling_analyzer.analyze_game(moves)], axis=1)
         # DEVELOPMENT ANALYZER
-        # result_data = pd.concat([result_data, development_analyzer.analyze_game(moves)], axis=1)
+        #result_data = pd.concat([result_data, development_analyzer.analyze_game(moves)], axis=1)
+        #Center analyzer
+        result_data = pd.concat([result_data, center_analyzer.analyze_game_empirical(moves)], axis=1)
         # SWINE ANALYZER
-        result_data = pd.concat([result_data, swine_analyzer.analyze_game(moves)], axis=1)
+        # result_data = pd.concat([result_data, swine_analyzer.analyze_game(moves)], axis=1)
         return result_data
 
     def run_analysis(self, save_interval=50,skip_first=0):
@@ -83,7 +88,6 @@ class Analyzer:
                             df = pd.concat(results, axis=0)
                             self.dataReader.append_to_csv(df)
                             results = []
-
                     print(f"Completed {completed_games}/{self.amount_to_analise-skip_first} games")
 
         except KeyboardInterrupt:
