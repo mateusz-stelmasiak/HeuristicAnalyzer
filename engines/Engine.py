@@ -45,6 +45,7 @@ class Engine:
         engine.configure({'Threads': 1, "Hash": 2048})
         return engine
 
+
     def get_best_move_alt(self, board, limit):
         result = self.engine.analysis(board, limit, info=chess.engine.INFO_NONE)
         analysis_res = result.wait()

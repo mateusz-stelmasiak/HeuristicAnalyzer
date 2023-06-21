@@ -14,6 +14,11 @@ class CenterAnalyzer:
         self.center_squares = [chess.E4, chess.D4,
                                chess.E5, chess.D5]
         self.fill_value = "-"
+        self.move_file = "subeliteMoves_cleaned.csv"
+        if os.path.exists(self.move_file):
+            self.move_dict = pd.read_csv(self.move_file, index_col=0).squeeze("columns").to_dict()
+        else:
+            self.move_dict = {}
 
         return
 
@@ -111,7 +116,6 @@ class CenterAnalyzer:
             avg_black_control_wins.append(
                 black_wins['BlackAttack'].apply(lambda x: x[i] if i < len(x) else np.nan).mean())
 
-
         avg_white_centralization = np.array(avg_white_centralization)
         avg_black_centralization = np.array(avg_black_centralization)
 
@@ -143,6 +147,43 @@ class CenterAnalyzer:
         plt.ylabel('średnia kontrola centrum')
         plt.legend()
         plt.show()
+
+    def analyze_game_empirical(self, moves):
+        self.board.reset()
+
+        for move in moves:
+            best_move = self.get_best_move_from_dict(self.board)
+            if best_move:
+                white_attack_before, black_attack_before, white_centralization_before, black_centralization_before = self.evaluate_center()
+                self.board.push_uci(best_move.uci())
+                white_attack_after, black_attack_after, white_centralization_after, black_centralization_after = self.evaluate_center()
+
+                # result["WhiteAttack"] = result["WhiteAttack"] + "," + str(white_attack)
+                # result["BlackAttack"] = result["BlackAttack"] + "," + str(black_attack)
+                # result["WhiteCentralization"] = result["WhiteCentralization"] + "," + str(white_centralization)
+                # result["BlackCentralization"] = result["BlackCentralization"] + "," + str(black_centralization)
+                result_dict = {
+                    "WhiteAttackIncrease": white_attack_after > white_attack_before,
+                    "BlackAttackIncrease": black_attack_after > black_attack_before,
+                    "WhiteCentralizationIncrease": white_centralization_after > white_centralization_before,
+                    "BlackCentralizationIncrease": black_centralization_after > black_centralization_before,
+                }
+                return pd.DataFrame(result_dict, index=[0])
+            result_dict = {
+                "WhiteAttackIncrease": -1,
+                "BlackAttackIncrease": -1,
+                "WhiteCentralizationIncrease": -1,
+                "BlackCentralizationIncrease": -1,
+            }
+            return pd.DataFrame(result_dict, index=[0])
+
+    def get_best_move_from_dict(self, board):
+        board_fen = board.fen()
+
+        if board_fen in self.move_dict:
+            return self.move_dict[board_fen]
+
+        return None
 
         # print('Correlation between average centralization and winning probability:')
         # print('White:', np.corrcoef(avg_white_centralization[white_wins], white_wins.sum())[0, 1])
