@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from CSVHandler import CSVHandler
+from data.processing.BasicStatsGetter import BasicStatsGetter
 
 
 # HEURISTIC: "Control the center"
@@ -70,10 +71,12 @@ class CenterAnalyzer:
 
         return pd.Series(result).to_frame().T
 
-    def analyze_results(self, result_path):
-        csv = CSVHandler(result_path)
-        df = csv.data
-
+    def analyze_results(self, result_path, output_path):
+        print("Result analysis started")
+        print("Loading data...")
+        csv_handler = CSVHandler(result_path, output_path)
+        df = csv_handler.data
+        print("Manipulating data...")
         # Convert the comma-separated strings into lists of integers
         for column in ['WhiteAttack', 'BlackAttack', 'WhiteCentralization', 'BlackCentralization']:
             df[column] = df[column].apply(lambda x: list(map(int, x.split(','))))
@@ -81,6 +84,7 @@ class CenterAnalyzer:
         # Filter the DataFrame based on the 'Result' column
         white_wins = df[df['Result'] == '1-0']
         black_wins = df[df['Result'] == '0-1']
+        draws = df[df['Result'] == "1/2-1/2"]
 
         # Calculate the average centralization and control for each half-turn
         avg_white_centralization = []
@@ -111,38 +115,90 @@ class CenterAnalyzer:
             avg_black_control_wins.append(
                 black_wins['BlackAttack'].apply(lambda x: x[i] if i < len(x) else np.nan).mean())
 
-
-        avg_white_centralization = np.array(avg_white_centralization)
-        avg_black_centralization = np.array(avg_black_centralization)
-
         # Calculate the centralization advantage
-        centralization_advantage = avg_white_centralization - avg_black_centralization
+        # avg_white_centralization = np.array(avg_white_centralization)
+        # avg_black_centralization = np.array(avg_black_centralization)
+        # centralization_advantage = avg_white_centralization - avg_black_centralization
+        print("Saving results...")
+        # save to results file
+        result = pd.DataFrame({
+            'AvgWhiteCentralization': avg_white_centralization,
+            'AvgBlackCentralization': avg_black_centralization,
+            'AvgWhiteCentralizationWins': avg_white_centralization_wins,
+            'AvgBlackCentralizationWins': avg_black_centralization_wins,
+            'AvgBlackControl': avg_black_control,
+            'AvgWhiteControl': avg_white_control,
+            'AvgBlackControlWins': avg_black_control_wins,
+            'AvgWhiteControlWins': avg_white_centralization_wins
+        })
+        csv_handler.save_to_csv(result)
 
-        plt.figure(figsize=(12, 6))
-        plt.plot([i / 2 for i in range(len(avg_white_centralization))], avg_white_centralization, 'o',
-                 label='Centralizacja białych')
-        plt.plot([i / 2 for i in range(len(avg_black_centralization))], avg_black_centralization, 'o',
-                 label='Centralizacja czarnych')
-        plt.plot([i / 2 for i in range(len(centralization_advantage))], centralization_advantage, 'o',
-                 label='Przewaga centralizacji-')
-        plt.title('Średnia centralizacja a tura')
-        plt.xlabel('tura')
-        plt.ylabel('średnia centralizacja')
-        plt.legend()
-        plt.show()
+    def analyze_results_alt(self, result_path, output_path, turns_to_analyze=100):
+        print("(ALT)Result analysis started")
+        print("Loading data...")
+        csv_handler = CSVHandler(result_path, output_path)
+        df = csv_handler.data
+        print("Manipulating data...")
+        # Convert the comma-separated strings into a mean of first 100 items in the list
+        for column in ['WhiteAttack', 'BlackAttack', 'WhiteCentralization', 'BlackCentralization']:
+            df[column] = df[column].apply(lambda x: np.mean(list(map(int, x.split(',')))[:turns_to_analyze]))
 
-        plt.figure(figsize=(12, 6))
-        plt.plot([i / 2 for i in range(len(avg_white_control))], avg_white_control, 'o', label='Kontrola białych')
-        plt.plot([i / 2 for i in range(len(avg_black_control))], avg_black_control, 'o', label='Kontrola czarnych')
-        plt.plot([i / 2 for i in range(len(avg_white_control_wins))], avg_white_control_wins, 'o',
-                 label='Kontrola białych (wygrane)')
-        plt.plot([i / 2 for i in range(len(avg_black_control_wins))], avg_black_control_wins, 'o',
-                 label='Kontrola czarnych (wygrane)')
-        plt.title('Średnia kontrola centrum a tura')
-        plt.xlabel('tura')
-        plt.ylabel('średnia kontrola centrum')
-        plt.legend()
-        plt.show()
+        # get and print winrates from the entire set
+        bsg = BasicStatsGetter()
+        white_wr, black_wr, draw_rate = bsg.get_win_rates(df)
+        #print(f"All data [W,B,D] len{len(df)}")
+        print(f"{white_wr:.2%},{black_wr:.2%},{draw_rate:.2%}")
+
+        # create a new dataframe containing only the rows that have WhiteCentralization > BlackCentralization
+        df_white_advantage = df[df['WhiteCentralization'] > df['BlackCentralization']]
+        white_wr, black_wr, draw_rate = bsg.get_win_rates(df_white_advantage)
+       #print(f"White advantage [W,B,D] len{len(df_white_advantage)}")
+        print(f"{white_wr:.2%},{black_wr:.2%},{draw_rate:.2%}")
+
+        # create a new dataframe containing only the rows that have WhiteCentralization < BlackCentralization
+        df_black_advantage = df[df['WhiteCentralization'] < df['BlackCentralization']]
+        white_wr, black_wr, draw_rate = bsg.get_win_rates(df_black_advantage)
+        #print(f"Black advantage [W,B,D] len{len(df_black_advantage)}")
+        print(f"{white_wr:.2%},{black_wr:.2%},{draw_rate:.2%}")
+
+
+    def plot_centralization(self, data_path):
+        csv_handler = CSVHandler(data_path)
+        df = csv_handler.data
+        print("Manipulating data...")
+        # Convert the comma-separated strings into lists of integers
+        for column in ['AvgWhiteCentralization', 'AvgBlackCentralization', 'AvgWhiteCentralizationWins',
+                       'BlackCentralization', 'AvgBlackCentralizationWins']:
+            df[column] = df[column].apply(lambda x: list(map(int, x.split(','))))
+
+        # print("Plotting results...")
+        # color_white = '#e8fcff'
+        # color_black ='#769ba8'
+        # plt.figure(figsize=(12, 6))
+        # plt.plot([i / 2 for i in range(len(avg_white_centralization))], avg_white_centralization, 'o',
+        #          label='Centralizacja białych', color=color_white)
+        # plt.plot([i / 2 for i in range(len(avg_black_centralization))], avg_black_centralization, 'o',
+        #          label='Centralizacja czarnych',color=color_black)
+        # # plt.plot([i / 2 for i in range(len(centralization_advantage))], centralization_advantage, 'o',
+        # #          label='Przewaga centralizacji-')
+        # plt.title('Średnia centralizacja a tura')
+        # plt.xlabel('tura')
+        # plt.ylabel('średnia centralizacja')
+        # plt.legend()
+        # plt.show()
+        #
+        # plt.figure(figsize=(12, 6))
+        # plt.plot([i / 2 for i in range(len(avg_white_control))], avg_white_control, 'o', label='Kontrola białych')
+        # plt.plot([i / 2 for i in range(len(avg_black_control))], avg_black_control, 'o', label='Kontrola czarnych')
+        # plt.plot([i / 2 for i in range(len(avg_white_control_wins))], avg_white_control_wins, 'o',
+        #          label='Kontrola białych (wygrane)')
+        # plt.plot([i / 2 for i in range(len(avg_black_control_wins))], avg_black_control_wins, 'o',
+        #          label='Kontrola czarnych (wygrane)')
+        # plt.title('Średnia kontrola centrum a tura')
+        # plt.xlabel('tura')
+        # plt.ylabel('średnia kontrola centrum')
+        # plt.legend()
+        # plt.show()
 
         # print('Correlation between average centralization and winning probability:')
         # print('White:', np.corrcoef(avg_white_centralization[white_wins], white_wins.sum())[0, 1])
