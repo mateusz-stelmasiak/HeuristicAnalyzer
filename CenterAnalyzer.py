@@ -6,6 +6,7 @@ import numpy as np
 
 from CSVHandler import CSVHandler
 from data.processing.BasicStatsGetter import BasicStatsGetter
+from engines.Engine import Engine, EngineType
 
 
 # HEURISTIC: "Control the center"
@@ -15,12 +16,14 @@ class CenterAnalyzer:
         self.center_squares = [chess.E4, chess.D4,
                                chess.E5, chess.D5]
         self.fill_value = "-"
-        self.move_file = "subeliteMoves_cleaned.csv"
-        if os.path.exists(self.move_file):
-            self.move_dict = pd.read_csv(self.move_file, index_col=0).squeeze("columns").to_dict()
-            # print(self.move_dict)
-        else:
-            self.move_dict = {}
+        #self.move_file = "moves_1_cleaned.csv"
+        # if os.path.exists(self.move_file):
+        #     self.move_dict = pd.read_csv(self.move_file, index_col=0).squeeze("columns").to_dict()
+        #     # print(self.move_dict)
+        # else:
+        #     self.move_dict = {}
+        self.engine = Engine(EngineType.STOCKFISH)
+        self.limit = chess.engine.Limit(depth=20)
 
         return
 
@@ -209,6 +212,67 @@ class CenterAnalyzer:
         # plt.legend()
         # plt.show()
 
+    def analyze_game_empirical_stockfish(self, data):
+        self.board.reset()
+        moves = eval(data['Moves'])
+        white_attack_incr_arr = eval(data["WhiteAttackIncrease"])
+        black_attack_incr_arr = eval(data["BlackAttackIncrease"])
+        white_centr_incr_arr = eval(data["WhiteCentralizationIncrease"])
+        black_centr_incr_arr = eval(data["BlackCentralizationIncrease"])
+        #convert to strings
+        white_attack_incr_arr = [str(x) for x in white_attack_incr_arr]
+        black_attack_incr_arr = [str(x) for x in black_attack_incr_arr]
+        white_centr_incr_arr = [str(x) for x in white_centr_incr_arr]
+        black_centr_incr_arr = [str(x) for x in black_centr_incr_arr]
+
+
+
+        max_move = min(len(moves), 20)
+
+        for i in range(0, max_move):
+            curr_eval = white_attack_incr_arr[i]
+            curr_move = moves[i]
+
+            if curr_eval != "-1":
+                self.board.push_uci(curr_move)
+                continue
+
+            #print("-1 found!")
+            hypothetical_board = self.board.copy()
+            white_attack_before, black_attack_before, white_centralization_before, black_centralization_before = self.evaluate_center(
+                hypothetical_board)
+            best_move = self.engine.get_best_move(hypothetical_board, self.limit)
+            hypothetical_board.push_uci(best_move)
+            white_attack_after, black_attack_after, white_centralization_after, black_centralization_after = self.evaluate_center(
+                hypothetical_board)
+            white_attack_incr = "1" if (white_attack_after > white_attack_before) else "0"
+            black_attack_incr = "1" if (black_attack_after > black_attack_before) else "0"
+            white_centralization_incr = "1" if (white_centralization_after > white_centralization_before) else "0"
+            black_centraliztion_incr = "1" if (black_centralization_after > black_centralization_before) else "0"
+
+            white_attack_incr_arr[i] = white_attack_incr
+            black_attack_incr_arr[i] = black_attack_incr
+            white_centr_incr_arr[i] = white_centralization_incr
+            black_centr_incr_arr[i] = black_centraliztion_incr
+            self.board.push_uci(curr_move)
+
+        # convert to comma separeted lists
+        white_attack_incr_arr = ','.join(list(white_attack_incr_arr))
+        black_attack_incr_arr = ','.join(list(black_attack_incr_arr))
+        white_centr_incr_arr = ','.join(list(white_centr_incr_arr))
+        black_centr_incr_arr = ','.join(list(black_centr_incr_arr))
+
+
+        result = {
+            "WhiteAttackIncrease": white_attack_incr_arr,
+            "BlackAttackIncrease": black_attack_incr_arr,
+            "WhiteCentralizationIncrease": white_centr_incr_arr,
+            "BlackCentralizationIncrease": black_centr_incr_arr
+        }
+
+        return pd.Series(result).to_frame().T
+
+
     def analyze_game_empirical(self, moves):
         self.board.reset()
 
@@ -225,10 +289,10 @@ class CenterAnalyzer:
             black_attack_incr = "1" if (black_attack_after > black_attack_before) else "0"
             white_centralization_incr = "1" if (white_centralization_after > white_centralization_before) else "0"
             black_centraliztion_incr = "1" if (black_centralization_after > black_centralization_before) else "0"
-            #print(f"{white_attack_incr},{black_attack_incr},{white_centralization_incr},{black_centraliztion_incr}")
+            # print(f"{white_attack_incr},{black_attack_incr},{white_centralization_incr},{black_centraliztion_incr}")
             result = {
                 "WhiteAttackIncrease": white_attack_incr,
-                "BlackAttackIncrease": black_attack_incr ,
+                "BlackAttackIncrease": black_attack_incr,
                 "WhiteCentralizationIncrease": white_centralization_incr,
                 "BlackCentralizationIncrease": black_centraliztion_incr,
             }
@@ -268,9 +332,9 @@ class CenterAnalyzer:
                 result["BlackAttackIncrease"] = result[
                                                     "BlackAttackIncrease"] + "," + black_attack_incr
                 result["WhiteCentralizationIncrease"] = result[
-                                                            "WhiteCentralizationIncrease"] +","+ white_centralization_incr
+                                                            "WhiteCentralizationIncrease"] + "," + white_centralization_incr
                 result["BlackCentralizationIncrease"] = result[
-                                                            "BlackCentralizationIncrease"] + "," +black_centraliztion_incr
+                                                            "BlackCentralizationIncrease"] + "," + black_centraliztion_incr
             else:
                 result["WhiteAttackIncrease"] = result["WhiteAttackIncrease"] + ",-1"
                 result["BlackAttackIncrease"] = result["BlackAttackIncrease"] + ",-1"
@@ -282,19 +346,20 @@ class CenterAnalyzer:
 
         return pd.Series(result).to_frame().T
 
+
     def get_best_move_from_dict(self, board):
         board_fen = board.fen()
 
         if board_fen in self.move_dict:
-            #res = self.move_dict[board_fen]
-            #print(f"FOUND A MOVE {res}")
+            # res = self.move_dict[board_fen]
+            # print(f"FOUND A MOVE {res}")
             return self.move_dict[board_fen]
 
         return None
 
-    # print('Correlation between average centralization and winning probability:')
-    # print('White:', np.corrcoef(avg_white_centralization[white_wins], white_wins.sum())[0, 1])
-    # print('Black:', np.corrcoef(avg_black_centralization[black_wins], black_wins.sum())[0, 1])
+# print('Correlation between average centralization and winning probability:')
+# print('White:', np.corrcoef(avg_white_centralization[white_wins], white_wins.sum())[0, 1])
+# print('Black:', np.corrcoef(avg_black_centralization[black_wins], black_wins.sum())[0, 1])
 
 # def create_plot(self):
 #        data = pd.read_csv(self.output_file)
